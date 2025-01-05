@@ -7,6 +7,7 @@ import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Employee, CalendarEvent, DaySchedule } from "@/types/types";
 import CalendarContextMenu from "./CalendarContextMenu";
+import { useTranslations } from 'next-intl';
 
 const locales = {
   es: es,
@@ -26,9 +27,16 @@ interface MonthlyCalendarProps {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
   onNavigate: (date: Date) => void;
-  onSelectSlot: (start: Date, end: Date) => void;
+  onSelectSlot: (start: Date) => void;
   onViewDay: (date: Date) => void;
   onViewWeek: (date: Date) => void;
+  isReadOnly?: boolean;
+  messages?: {
+    today: string;
+    previous: string;
+    next: string;
+    noEventsInRange: string;
+  };
 }
 
 const formatScheduleToEvent = (
@@ -67,19 +75,19 @@ export default function MonthlyCalendar({
   onSelectSlot,
   onViewDay,
   onViewWeek,
+  isReadOnly = false,
 }: MonthlyCalendarProps) {
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
     date: Date;
   } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const t = useTranslations();
 
   // Modificar el useEffect existente para limpiar los estados cuando cambia la fecha
   useEffect(() => {
     const cleanup = () => {
-      setIsDragging(false);
       setIsNavigating(false);
       setContextMenu(null);
     };
@@ -100,28 +108,19 @@ export default function MonthlyCalendar({
     action: 'select' | 'click' | 'doubleClick';
     box?: { x: number; y: number; clientX: number; clientY: number };
   }) => {
-    if (isNavigating) return;
-    
-    if (slotInfo.action === 'select') {
-      setIsDragging(true);
-      setContextMenu(null);
-    } else if (slotInfo.box) {
-      setIsDragging(false);
+    if (slotInfo.box) {
       const { start, box: { clientX: x, clientY: y } } = slotInfo;
-      setContextMenu({ x, y, date: start });
+      // Si es readonly (employee), solo mostrar menú de navegación
+      if (isReadOnly) {
+        setContextMenu({ x, y, date: start });
+      } else if (!isNavigating) {
+        setContextMenu({ x, y, date: start });
+      }
     }
   };
 
   const handleCloseMenu = () => {
     setContextMenu(null);
-  };
-
-  const getEmployeesWorkingMessage = () => {
-    const workingEmployees = employees.filter((emp) => {
-      const dateKey = selectedDate.toISOString().split("T")[0];
-      return emp.schedules?.[dateKey];
-    });
-    return `${workingEmployees.length} empleados programados`;
   };
 
   // Convertir los horarios de empleados a eventos del calendario
@@ -139,11 +138,19 @@ export default function MonthlyCalendar({
   // Combinar eventos especiales con horarios de empleados
   const allEvents = [...specialEvents, ...employeeScheduleEvents];
 
+  const messages = {
+    today: t('calendar.messages.today'),
+    previous: t('calendar.messages.previous'),
+    next: t('calendar.messages.next'),
+    month: t('calendar.views.month'),
+    week: t('calendar.views.week'),
+    day: t('calendar.views.day'),
+    noEventsInRange: t('calendar.messages.noEventsInRange'),
+    showMore: (total: number) => `+${total} más`
+  };
+
   return (
     <div className="space-y-4">
-      <div className="bg-white p-4 rounded-lg shadow">
-        <p className="text-gray-600">{getEmployeesWorkingMessage()}</p>
-      </div>
       <div className="h-[700px] bg-white p-4 rounded-lg shadow">
         <Calendar
           localizer={localizer}
@@ -154,41 +161,27 @@ export default function MonthlyCalendar({
           views={["month"]}
           onSelectSlot={handleSelectSlot}
           onNavigate={handleNavigate}
-          selectable={!isDragging}
+          selectable={true}
           popup
           eventPropGetter={(event) => ({
             style: {
               backgroundColor: event.color || "#3174ad",
             },
           })}
-          messages={{
-            today: "Hoy",
-            previous: "Anterior",
-            next: "Siguiente",
-            month: "Mes",
-            noEventsInRange: "No hay eventos en este período",
-          }}
-          onSelecting={() => {
-            if (isNavigating) return false;
-            return true;
-          }}
-          onView={() => {
-            setIsDragging(false);
-            setIsNavigating(false);
-            setContextMenu(null);
-          }}
+          culture={t('locale')}
+          messages={messages}
           date={selectedDate}
         />
       </div>
       <CalendarContextMenu
         position={contextMenu}
         onClose={handleCloseMenu}
-        onCreateEvent={() => {
+        onCreateEvent={!isReadOnly ? () => {
           if (contextMenu) {
-            onSelectSlot(contextMenu.date, contextMenu.date);
+            onSelectSlot(contextMenu.date);
             handleCloseMenu();
           }
-        }}
+        } : undefined}
         onViewDay={() => {
           if (contextMenu) {
             onViewDay(contextMenu.date);

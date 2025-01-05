@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Employee, ScheduleHistory, type DaySchedule } from "@/types/types";
 import { getRandomColor } from "@/lib/utils";
 import BreakReasonDialog from "@/components/BreakReasonDialog";
+import { useTranslations } from 'next-intl';
 
 interface DayScheduleProps {
   date: Date;
@@ -13,6 +14,8 @@ interface DayScheduleProps {
   onUpdateHistory: (
     updater: (prev: ScheduleHistory[]) => ScheduleHistory[]
   ) => void;
+  isReadOnly?: boolean;
+  locale?: string;
 }
 
 const LUNCH_ICON = "🍽️";
@@ -30,7 +33,10 @@ export default function DaySchedule({
   employees,
   onUpdateEmployees,
   onUpdateHistory,
+  isReadOnly = false,
+  locale,
 }: DayScheduleProps) {
+  const t = useTranslations();
   const [isDragging, setIsDragging] = useState(false);
   const [startCell, setStartCell] = useState<number | null>(null);
   const [currentEmployee, setCurrentEmployee] = useState<number | null>(null);
@@ -80,6 +86,7 @@ export default function DaySchedule({
     hourIndex: number,
     isHalfHour: boolean
   ) => {
+    if (isReadOnly) return;
     const cellIndex = hourIndex * 2 + (isHalfHour ? 1 : 0);
     const dateKey = getDateKey(date);
     const employee = employees[employeeIndex];
@@ -271,7 +278,7 @@ export default function DaySchedule({
     <>
       <Card className="p-6 select-none max-w-[1200px] mx-auto">
         <div className="mb-4 text-lg font-medium border-b pb-2">
-          {date.toLocaleDateString("es-ES", {
+          {date.toLocaleDateString(locale || t('locale'), {
             weekday: "long",
             year: "numeric",
             month: "2-digit",
@@ -283,22 +290,21 @@ export default function DaySchedule({
             <div className="w-6 h-6 border flex items-center justify-center text-base">
               {LUNCH_ICON}
             </div>
-            <span>Lunch break</span>
+            <span>{t('schedule.lunch_break')}</span>
           </span>
           <span className="flex items-center gap-1">
             <div className="w-6 h-6 border flex items-center justify-center text-base">
               {RANDOM_BREAK_ICON}
             </div>
-            <span>Emergency break</span>
+            <span>{t('schedule.emergency_break')}</span>
           </span>
           <span className="text-xs italic">
-            (First select lunch break, then you can mark emergency breaks for
-            unexpected situations)
+            {t('schedule.break_instruction')}
           </span>
         </div>
         <div className="grid gap-0">
           <div className="grid grid-cols-[200px,1fr,auto]">
-            <div className="font-medium px-2 py-1 border">Tages-pensum</div>
+            <div className="font-medium px-2 py-1 border">{t('schedule.daily_quota')}</div>
             <div className="grid grid-rows-2 gap-0">
               <div className="grid grid-cols-12 gap-0">
                 {hours.slice(0, -1).map((hour) => (
@@ -331,7 +337,7 @@ export default function DaySchedule({
               </div>
               <div
                 className="grid grid-cols-12 gap-0 h-8"
-                onMouseLeave={handleMouseUp}
+                onMouseLeave={!isReadOnly ? handleMouseUp : undefined}
               >
                 {Array.from({ length: 12 }).map((_, hourIndex) => (
                   <div
@@ -427,17 +433,19 @@ export default function DaySchedule({
                   </div>
                 ))}
               </div>
-              <button
-                onClick={() => clearEmployeeSchedule(employeeIndex)}
-                className="p-1 bg-red-500 text-white rounded w-8 h-8 flex items-center justify-center ml-2"
-              >
-                ×
-              </button>
+              {!isReadOnly && (
+                <button
+                  onClick={() => clearEmployeeSchedule(employeeIndex)}
+                  className="p-1 bg-red-500 text-white rounded w-8 h-8 flex items-center justify-center ml-2"
+                >
+                  ×
+                </button>
+              )}
             </div>
           ))}
         </div>
         <div className="mt-4 text-right font-medium">
-          Total Hours: {calculateTotalHours().toFixed(2)}
+          {t('schedule.total_hours')}: {calculateTotalHours().toFixed(2)}
         </div>
       </Card>
       <BreakReasonDialog

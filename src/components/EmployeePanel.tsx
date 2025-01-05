@@ -3,6 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Employee } from "@/types/types";
 import { getRandomColor } from "@/lib/utils";
+import { useTranslations } from 'next-intl';
 
 interface EmployeePanelProps {
   employees: Employee[];
@@ -18,6 +19,8 @@ export default function EmployeePanel({
   onAddEmployee,
   onRemoveEmployee,
 }: EmployeePanelProps) {
+  const t = useTranslations();
+
   const calculateEmployeeStats = (employee: Employee) => {
     console.log(employee);
     if (!employee.schedules || Object.keys(employee.schedules).length === 0)
@@ -59,12 +62,12 @@ export default function EmployeePanel({
   return (
     <Card className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-medium">Empleados</h2>
+        <h2 className="text-xl font-medium">{t('navigation.employees')}</h2>
         <button
           onClick={onAddEmployee}
           className="px-3 py-1 bg-blue-500 text-white rounded text-sm"
         >
-          + Añadir
+          + {t('employee.add')}
         </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -94,32 +97,31 @@ export default function EmployeePanel({
 
               <div className="flex items-center gap-2 text-sm">
                 <label className="flex items-center gap-2">
-                  Color:
+                  {t('employee.select_color')}:
                   <input
                     type="color"
                     className="w-6 h-6 p-0 cursor-pointer"
                     value={ensureValidHexColor(employee.defaultColor)}
                     onChange={(e) => handleColorChange(index, e.target.value)}
-                    title="Seleccionar color"
                   />
                 </label>
               </div>
 
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span>Horas Diarias:</span>
+                  <span>{t('employee.daily_hours')}:</span>
                   <span className="font-medium">
                     {stats.dailyHours.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Horas Semanales:</span>
+                  <span>{t('employee.weekly_hours')}:</span>
                   <span className="font-medium">
                     {stats.weeklyHours.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Horas Mensuales:</span>
+                  <span>{t('employee.monthly_hours')}:</span>
                   <span className="font-medium">
                     {stats.monthlyHours.toFixed(2)}
                   </span>

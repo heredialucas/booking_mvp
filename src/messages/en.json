@@ -1,0 +1,76 @@
+{
+  "locale": "en-US",
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign In",
+    "error": "Invalid username or password"
+  },
+  "navigation": {
+    "calendar": "Calendar",
+    "employees": "Employees",
+    "history": "History"
+  },
+  "calendar": {
+    "views": {
+      "month": "Month",
+      "week": "Week",
+      "day": "Day"
+    },
+    "actions": {
+      "create_event": "Create Event",
+      "back_to_calendar": "Back to Calendar",
+      "view_day": "View day",
+      "view_week": "View week"
+    },
+    "messages": {
+      "today": "Today",
+      "previous": "Previous",
+      "next": "Next",
+      "month": "Month",
+      "week": "Week",
+      "day": "Day",
+      "agenda": "Agenda",
+      "date": "Date",
+      "time": "Time",
+      "event": "Event",
+      "noEventsInRange": "No events in this period",
+      "showMore": "Show more"
+    },
+    "week_header": "Week of {date}",
+    "event": {
+      "title": "Title",
+      "start_time": "Start Time",
+      "end_time": "End Time",
+      "color": "Color"
+    }
+  },
+  "employee": {
+    "add": "Add Employee",
+    "remove": "Remove",
+    "daily_hours": "Daily Hours",
+    "weekly_hours": "Weekly Hours",
+    "monthly_hours": "Monthly Hours",
+    "select_color": "Select color"
+  },
+  "schedule": {
+    "lunch_break": "Lunch break",
+    "emergency_break": "Emergency break",
+    "break_instruction": "(First select lunch break, then you can mark emergency breaks for unexpected situations)",
+    "daily_quota": "Daily quota",
+    "total_hours": "Total hours"
+  },
+  "history": {
+    "date_time": "Date and Time",
+    "employee": "Employee",
+    "previous_schedule": "Previous Schedule",
+    "new_schedule": "New Schedule",
+    "copy": "Copy"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "create": "Create"
+  }
+} 

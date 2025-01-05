@@ -1,0 +1,76 @@
+{
+  "locale": "de-DE",
+  "auth": {
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "submit": "Einloggen",
+    "error": "Ungültiger Benutzername oder Passwort"
+  },
+  "navigation": {
+    "calendar": "Kalender",
+    "employees": "Mitarbeiter",
+    "history": "Historie"
+  },
+  "calendar": {
+    "views": {
+      "month": "Monat",
+      "week": "Woche",
+      "day": "Tag"
+    },
+    "actions": {
+      "create_event": "Termin erstellen",
+      "back_to_calendar": "Zurück zum Kalender",
+      "view_day": "Tag anzeigen",
+      "view_week": "Woche anzeigen"
+    },
+    "messages": {
+      "today": "Heute",
+      "previous": "Zurück",
+      "next": "Weiter",
+      "month": "Monat",
+      "week": "Woche",
+      "day": "Tag",
+      "agenda": "Agenda",
+      "date": "Datum",
+      "time": "Zeit",
+      "event": "Ereignis",
+      "noEventsInRange": "Keine Ereignisse in diesem Zeitraum",
+      "showMore": "Mehr anzeigen"
+    },
+    "week_header": "Woche vom {date}",
+    "event": {
+      "title": "Titel",
+      "start_time": "Startzeit",
+      "end_time": "Endzeit",
+      "color": "Farbe"
+    }
+  },
+  "employee": {
+    "add": "Mitarbeiter hinzufügen",
+    "remove": "Entfernen",
+    "daily_hours": "Tagesstunden",
+    "weekly_hours": "Wochenstunden",
+    "monthly_hours": "Monatsstunden",
+    "select_color": "Farbe auswählen"
+  },
+  "schedule": {
+    "lunch_break": "Mittagspause",
+    "emergency_break": "Notfallpause",
+    "break_instruction": "(Wählen Sie zuerst die Mittagspause aus, dann können Sie Notfallpausen für unerwartete Situationen markieren)",
+    "daily_quota": "Tagesquote",
+    "total_hours": "Gesamtstunden"
+  },
+  "history": {
+    "date_time": "Datum und Uhrzeit",
+    "employee": "Mitarbeiter",
+    "previous_schedule": "Vorheriger Zeitplan",
+    "new_schedule": "Neuer Zeitplan",
+    "copy": "Kopieren"
+  },
+  "common": {
+    "cancel": "Abbrechen",
+    "create": "Erstellen"
+  }
+} 

@@ -11,6 +11,7 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 import { useState } from "react";
+import { useTranslations } from 'next-intl';
 
 interface HistoryPanelProps {
   history: ScheduleHistory[];
@@ -23,6 +24,7 @@ export default function HistoryPanel({
   employees,
   onCopySchedule,
 }: HistoryPanelProps) {
+  const t = useTranslations();
   const [sorting, setSorting] = useState<SortingState>([]);
   const columnHelper = createColumnHelper<ScheduleHistory>();
 
@@ -34,19 +36,19 @@ export default function HistoryPanel({
 
   const columns = [
     columnHelper.accessor("timestamp", {
-      header: "Fecha y Hora",
-      cell: (info) => info.getValue().toLocaleString(),
+      header: t('history.date_time'),
+      cell: (info) => info.getValue().toLocaleString(t('locale')),
     }),
     columnHelper.accessor("employeeIndex", {
-      header: "Empleado",
+      header: t('history.employee'),
       cell: (info) => employees[info.getValue()].name,
     }),
     columnHelper.accessor("previousSchedule", {
-      header: "Horario Anterior",
+      header: t('history.previous_schedule'),
       cell: (info) => formatSchedule(info.getValue()),
     }),
     columnHelper.accessor("newSchedule", {
-      header: "Nuevo Horario",
+      header: t('history.new_schedule'),
       cell: (info) => formatSchedule(info.getValue()),
     }),
     columnHelper.display({
@@ -56,7 +58,7 @@ export default function HistoryPanel({
           onClick={() => onCopySchedule(info.row.original.newSchedule!)}
           className="px-2 py-1 bg-green-500 text-white rounded text-sm"
         >
-          Copiar
+          {t('history.copy')}
         </button>
       ),
     }),

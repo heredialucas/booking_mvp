@@ -1,7 +1,9 @@
+import { useTranslations } from 'next-intl';
+
 interface CalendarContextMenuProps {
   position: { x: number; y: number } | null;
   onClose: () => void;
-  onCreateEvent: () => void;
+  onCreateEvent?: () => void;
   onViewDay: () => void;
   onViewWeek: () => void;
 }
@@ -13,6 +15,8 @@ export default function CalendarContextMenu({
   onViewDay,
   onViewWeek
 }: CalendarContextMenuProps) {
+  const t = useTranslations();
+
   if (!position) return null;
 
   const handleAction = (action: () => void) => {
@@ -29,20 +33,22 @@ export default function CalendarContextMenu({
         className="w-full px-4 py-2 text-left hover:bg-gray-100"
         onClick={() => handleAction(onViewDay)}
       >
-        Ver día
+        {t('calendar.actions.view_day')}
       </button>
       <button
         className="w-full px-4 py-2 text-left hover:bg-gray-100"
         onClick={() => handleAction(onViewWeek)}
       >
-        Ver semana
+        {t('calendar.actions.view_week')}
       </button>
-      <button
-        className="w-full px-4 py-2 text-left hover:bg-gray-100"
-        onClick={() => handleAction(onCreateEvent)}
-      >
-        Crear evento
-      </button>
+      {onCreateEvent && (
+        <button
+          className="w-full px-4 py-2 text-left hover:bg-gray-100"
+          onClick={() => handleAction(onCreateEvent)}
+        >
+          {t('calendar.actions.create_event')}
+        </button>
+      )}
     </div>
   );
 } 

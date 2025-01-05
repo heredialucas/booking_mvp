@@ -14,20 +14,11 @@ import { getRandomColor } from "@/lib/utils";
 import WeeklySchedule from "./WeeklySchedule";
 import SpecialEventDialog from "./SpecialEventDialog";
 import { default as DaySchedule } from "./DaySchedule";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTranslations } from "next-intl";
 
 type ActivePanel = "calendar" | "employees" | "history";
 type CalendarView = "month" | "week" | "day";
-
-interface StoredEvent extends Omit<CalendarEvent, "start" | "end"> {
-  start: string;
-  end: string;
-}
-
-interface StoredEmployee extends Omit<Employee, "schedules"> {
-  schedules: {
-    [key: string]: DayScheduleType;
-  };
-}
 
 const formatScheduleToEvent = (
   employee: Employee,
@@ -57,61 +48,43 @@ const formatScheduleToEvent = (
 export default function Dashboard() {
   const [activePanel, setActivePanel] = useState<ActivePanel>("calendar");
   const [calendarView, setCalendarView] = useState<CalendarView>("month");
-  const [employees, setEmployees] = useState<Employee[]>([
-    {
-      name: "Worker 1",
-      hours: 0,
-      defaultColor: getRandomColor(),
-      schedules: {},
-    },
-    {
-      name: "Worker 2",
-      hours: 0,
-      defaultColor: getRandomColor(),
-      schedules: {},
-    },
-  ]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [scheduleHistory, setScheduleHistory] = useState<ScheduleHistory[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const t = useTranslations();
 
-  // Cargar eventos al iniciar
-  useEffect(() => {
-    const savedEvents = localStorage.getItem("calendarEvents");
-    if (savedEvents) {
-      const parsedEvents = JSON.parse(savedEvents).map(
-        (event: StoredEvent) => ({
-          ...event,
-          start: new Date(event.start),
-          end: new Date(event.end),
-        })
-      );
-      setEvents(parsedEvents);
-    }
-  }, []);
-
-  // Cargar horarios de empleados al iniciar
+  // Cargar empleados al iniciar y cuando cambie el usuario
   useEffect(() => {
     const savedEmployees = localStorage.getItem("employees");
+    console.log("Loading employees, user:", user?.name);
+    console.log("Saved employees:", savedEmployees);
     if (savedEmployees) {
-      const parsedEmployees = JSON.parse(savedEmployees).map(
-        (employee: StoredEmployee) => ({
-          ...employee,
-          schedules: employee.schedules || [],
-        })
-      );
-      setEmployees(parsedEmployees);
+      try {
+        const parsedEmployees = JSON.parse(savedEmployees);
+        setEmployees(parsedEmployees);
+      } catch (error) {
+        console.error("Error parsing employees:", error);
+      }
     }
-  }, []);
+  }, [user]);
 
-  // Agregar este useEffect para guardar empleados cuando se actualicen
+  // Guardar empleados solo cuando se actualicen manualmente
   useEffect(() => {
-    localStorage.setItem("employees", JSON.stringify(employees));
+    if (employees.length > 0) {
+      // Solo guardar si hay empleados
+      console.log("Saving employees:", employees);
+      localStorage.setItem("employees", JSON.stringify(employees));
+    }
   }, [employees]);
 
-  // Modificar el useEffect que convierte los horarios a eventos
+  // Convertir horarios a eventos
   useEffect(() => {
+    if (employees.length === 0) return; // No procesar si no hay empleados
+
+    console.log("Converting schedules to events, employees:", employees);
     const scheduleEvents = employees.flatMap((employee) => {
       if (!employee.schedules) return [];
 
@@ -123,27 +96,9 @@ export default function Dashboard() {
         .filter((event): event is CalendarEvent => event !== null);
     });
 
-    // Mantener solo los eventos especiales del estado actual
     const specialEvents = events.filter((event) => event.type === "special");
-
-    // Actualizar eventos directamente sin comparación
     setEvents([...specialEvents, ...scheduleEvents]);
-  }, [employees]); // Remover events de las dependencias
-
-  // Mantener el useEffect para guardar en localStorage
-  useEffect(() => {
-    const specialEvents = events.filter((event) => event.type === "special");
-    localStorage.setItem(
-      "calendarEvents",
-      JSON.stringify(
-        specialEvents.map((event) => ({
-          ...event,
-          start: event.start.toISOString(),
-          end: event.end.toISOString(),
-        }))
-      )
-    );
-  }, [events]);
+  }, [employees]);
 
   const handleUpdateEmployees = (newEmployees: Employee[]) => {
     setEmployees(newEmployees);
@@ -210,6 +165,7 @@ export default function Dashboard() {
   };
 
   const handleSelectSlot = (start: Date) => {
+    if (user?.role !== "admin") return; // Prevenir creación de eventos para empleados
     setSelectedDate(start);
     setIsEventDialogOpen(true);
   };
@@ -254,6 +210,13 @@ export default function Dashboard() {
             onSelectSlot={handleSelectSlot}
             onViewDay={handleViewDay}
             onViewWeek={handleViewWeek}
+            isReadOnly={user?.role !== "admin"}
+            messages={{
+              today: t("calendar.messages.today"),
+              previous: t("calendar.messages.previous"),
+              next: t("calendar.messages.next"),
+              noEventsInRange: t("calendar.messages.noEventsInRange"),
+            }}
           />
         );
       case "week":
@@ -264,23 +227,27 @@ export default function Dashboard() {
             onUpdateEmployees={setEmployees}
             onUpdateHistory={setScheduleHistory}
             onNavigateToMonth={() => setCalendarView("month")}
+            isReadOnly={user?.role !== "admin"}
+            backToCalendarText={t("calendar.actions.back_to_calendar")}
           />
         );
       case "day":
         return (
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <button
-                onClick={() => setIsEventDialogOpen(true)}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-              >
-                Crear Evento Especial
-              </button>
+            <div className="flex justify-end items-center">
+              {user?.role === "admin" && (
+                <button
+                  onClick={() => setIsEventDialogOpen(true)}
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 mr-2"
+                >
+                  {t("calendar.actions.create_event")}
+                </button>
+              )}
               <button
                 onClick={() => setCalendarView("month")}
                 className="px-4 py-2 bg-blue-500 text-white rounded"
               >
-                Volver al Calendario
+                {t("calendar.actions.back_to_calendar")}
               </button>
             </div>
             <DaySchedule
@@ -288,42 +255,71 @@ export default function Dashboard() {
               employees={employees}
               onUpdateEmployees={setEmployees}
               onUpdateHistory={setScheduleHistory}
+              isReadOnly={user?.role !== "admin"}
             />
           </div>
         );
     }
   };
 
+  useEffect(() => {
+    if (
+      user?.role === "employee" &&
+      (activePanel === "employees" || activePanel === "history")
+    ) {
+      setActivePanel("calendar");
+    }
+  }, [activePanel, user?.role]);
+
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex gap-4 mb-6">
-          <button
-            className={`px-4 py-2 rounded ${
-              activePanel === "calendar" ? "bg-blue-500 text-white" : "bg-white"
-            }`}
-            onClick={() => setActivePanel("calendar")}
-          >
-            Calendario
-          </button>
-          <button
-            className={`px-4 py-2 rounded ${
-              activePanel === "employees"
-                ? "bg-blue-500 text-white"
-                : "bg-white"
-            }`}
-            onClick={() => setActivePanel("employees")}
-          >
-            Empleados
-          </button>
-          <button
-            className={`px-4 py-2 rounded ${
-              activePanel === "history" ? "bg-blue-500 text-white" : "bg-white"
-            }`}
-            onClick={() => setActivePanel("history")}
-          >
-            Historial
-          </button>
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex gap-4">
+            <button
+              className={`px-4 py-2 rounded ${
+                activePanel === "calendar"
+                  ? "bg-blue-500 text-white"
+                  : "bg-white"
+              }`}
+              onClick={() => setActivePanel("calendar")}
+            >
+              {t("navigation.calendar")}
+            </button>
+            {user?.role === "admin" && (
+              <>
+                <button
+                  className={`px-4 py-2 rounded ${
+                    activePanel === "employees"
+                      ? "bg-blue-500 text-white"
+                      : "bg-white"
+                  }`}
+                  onClick={() => setActivePanel("employees")}
+                >
+                  {t("navigation.employees")}
+                </button>
+                <button
+                  className={`px-4 py-2 rounded ${
+                    activePanel === "history"
+                      ? "bg-blue-500 text-white"
+                      : "bg-white"
+                  }`}
+                  onClick={() => setActivePanel("history")}
+                >
+                  {t("navigation.history")}
+                </button>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-gray-600">{user?.name}</span>
+            <button
+              onClick={logout}
+              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            >
+              {t("auth.logout")}
+            </button>
+          </div>
         </div>
 
         {activePanel === "calendar" && (
@@ -337,7 +333,7 @@ export default function Dashboard() {
                 }`}
                 onClick={() => handleViewChange("month")}
               >
-                Mes
+                {t("calendar.views.month")}
               </button>
               <button
                 className={`px-4 py-2 rounded ${
@@ -347,7 +343,7 @@ export default function Dashboard() {
                 }`}
                 onClick={() => handleViewChange("week")}
               >
-                Semana
+                {t("calendar.views.week")}
               </button>
               <button
                 className={`px-4 py-2 rounded ${
@@ -355,14 +351,14 @@ export default function Dashboard() {
                 }`}
                 onClick={() => handleViewChange("day")}
               >
-                Día
+                {t("calendar.views.day")}
               </button>
             </div>
             {renderCalendarView()}
           </div>
         )}
 
-        {activePanel === "employees" && (
+        {activePanel === "employees" && user?.role === "admin" && (
           <EmployeePanel
             employees={employees}
             onAddEmployee={handleAddEmployee}
@@ -371,7 +367,7 @@ export default function Dashboard() {
           />
         )}
 
-        {activePanel === "history" && (
+        {activePanel === "history" && user?.role === "admin" && (
           <HistoryPanel
             history={scheduleHistory}
             employees={employees}
