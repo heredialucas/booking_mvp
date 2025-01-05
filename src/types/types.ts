@@ -19,6 +19,10 @@ export interface Schedule {
   lunchBreak?: {
     start: number;
     end: number;
-    color: string;
   };
+  randomBreaks?: Array<{
+    start: number;
+    end: number;
+    reason: string;
+  }>;
 } 
