@@ -76,59 +76,38 @@ export default function MonthlyCalendar({
   const [isDragging, setIsDragging] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // Manejar clics fuera
+  // Modificar el useEffect existente para limpiar los estados cuando cambia la fecha
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      // Si estamos navegando o arrastrando, no hacer nada
-      if (isDragging || isNavigating) return;
-      
-      if (contextMenu && 
-          !(event.target as Element).closest('.rbc-calendar') && 
-          !(event.target as Element).closest('.context-menu') &&
-          !(event.target as Element).closest('.rbc-toolbar')) {
-        setContextMenu(null);
-      }
+    const cleanup = () => {
+      setIsDragging(false);
+      setIsNavigating(false);
+      setContextMenu(null);
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [contextMenu, isDragging, isNavigating]);
-
-  // Reset estados cuando cambia la fecha seleccionada
-  useEffect(() => {
-    setIsDragging(false);
-    setIsNavigating(false);
+    cleanup();
+    return cleanup;
   }, [selectedDate]);
 
+  // Modificar el handleNavigate para manejar mejor la navegación
   const handleNavigate = (newDate: Date) => {
     if (!newDate || isNaN(newDate.getTime())) return;
-    
-    setIsNavigating(true);
-    setIsDragging(false);
     onNavigate(newDate);
-    
-    // Asegurarse de que los estados se reseteen después de la navegación
-    setTimeout(() => {
-      setIsNavigating(false);
-      setIsDragging(false);
-    }, 0);
   };
 
+  // Modificar el handleSelectSlot para ser más robusto
   const handleSelectSlot = (slotInfo: {
     start: Date;
     action: 'select' | 'click' | 'doubleClick';
     box?: { x: number; y: number; clientX: number; clientY: number };
   }) => {
-    if (isNavigating) return; // No permitir selección mientras se navega
+    if (isNavigating) return;
     
     if (slotInfo.action === 'select') {
       setIsDragging(true);
-    } else {
-      if (!slotInfo.box) return;
-      const {
-        start,
-        box: { clientX: x, clientY: y },
-      } = slotInfo;
+      setContextMenu(null);
+    } else if (slotInfo.box) {
+      setIsDragging(false);
+      const { start, box: { clientX: x, clientY: y } } = slotInfo;
       setContextMenu({ x, y, date: start });
     }
   };
@@ -175,7 +154,7 @@ export default function MonthlyCalendar({
           views={["month"]}
           onSelectSlot={handleSelectSlot}
           onNavigate={handleNavigate}
-          selectable={!isNavigating}
+          selectable={!isDragging}
           popup
           eventPropGetter={(event) => ({
             style: {
@@ -191,13 +170,14 @@ export default function MonthlyCalendar({
           }}
           onSelecting={() => {
             if (isNavigating) return false;
-            setIsDragging(false);
             return true;
           }}
           onView={() => {
             setIsDragging(false);
             setIsNavigating(false);
+            setContextMenu(null);
           }}
+          date={selectedDate}
         />
       </div>
       <CalendarContextMenu

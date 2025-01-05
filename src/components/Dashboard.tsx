@@ -35,7 +35,7 @@ const formatScheduleToEvent = (
   schedule: DayScheduleType
 ): CalendarEvent => {
   const [year, month, day] = date.split("-").map(Number);
-  const startDate = new Date(year, month - 1, day); // month - 1 porque los meses en JS van de 0-11
+  const startDate = new Date(year, month - 1, day);
   const endDate = new Date(year, month - 1, day);
 
   startDate.setHours(Math.floor(schedule.start / 2) + 8);
@@ -124,19 +124,11 @@ export default function Dashboard() {
     });
 
     // Mantener solo los eventos especiales del estado actual
-    const currentSpecialEvents = events.filter(
-      (event) => event.type === "special"
-    );
+    const specialEvents = events.filter((event) => event.type === "special");
 
-    // Comparar si realmente necesitamos actualizar
-    const newEvents = [...currentSpecialEvents, ...scheduleEvents];
-    const currentEventsStr = JSON.stringify(events);
-    const newEventsStr = JSON.stringify(newEvents);
-
-    if (currentEventsStr !== newEventsStr) {
-      setEvents(newEvents);
-    }
-  }, [employees, events]); // Agregar events a las dependencias
+    // Actualizar eventos directamente sin comparación
+    setEvents([...specialEvents, ...scheduleEvents]);
+  }, [employees]); // Remover events de las dependencias
 
   // Mantener el useEffect para guardar en localStorage
   useEffect(() => {
@@ -155,9 +147,8 @@ export default function Dashboard() {
 
   const handleUpdateEmployees = (newEmployees: Employee[]) => {
     setEmployees(newEmployees);
-
-    // Actualizar localStorage
-    localStorage.setItem("employees", JSON.stringify(newEmployees));
+    // Forzar una actualización del selectedDate para refrescar la vista
+    setSelectedDate((prev) => new Date(prev.getTime()));
   };
 
   const handleUpdateEmployee = (index: number, employee: Employee) => {
@@ -233,6 +224,23 @@ export default function Dashboard() {
     setCalendarView("week");
   };
 
+  const handleCalendarNavigate = (date: Date) => {
+    setSelectedDate(date);
+
+    const scheduleEvents = employees.flatMap((employee) => {
+      if (!employee.schedules) return [];
+      return Object.entries(employee.schedules)
+        .map(([d, schedule]) => {
+          if (!schedule) return null;
+          return formatScheduleToEvent(employee, d, schedule);
+        })
+        .filter((event): event is CalendarEvent => event !== null);
+    });
+
+    const specialEvents = events.filter((event) => event.type === "special");
+    setEvents([...specialEvents, ...scheduleEvents]);
+  };
+
   const renderCalendarView = () => {
     switch (calendarView) {
       case "month":
@@ -242,7 +250,7 @@ export default function Dashboard() {
             events={events}
             selectedDate={selectedDate}
             onSelectDate={handleDateSelect}
-            onNavigate={setSelectedDate}
+            onNavigate={handleCalendarNavigate}
             onSelectSlot={handleSelectSlot}
             onViewDay={handleViewDay}
             onViewWeek={handleViewWeek}
