@@ -2,24 +2,23 @@ export interface Employee {
   name: string;
   hours: number;
   defaultColor?: string;
-  schedule?: {
-    start: number;
-    end: number;
-    color: string;
-  };
+  schedule?: Schedule;
 }
 
 export interface ScheduleHistory {
   timestamp: Date;
   employeeIndex: number;
-  previousSchedule: Employee['schedule'];
-  newSchedule: Employee['schedule'];
+  previousSchedule: Schedule | undefined;
+  newSchedule: Schedule | undefined;
 }
 
 export interface Schedule {
   start: number;
   end: number;
   color: string;
-  lunchStart?: number;
-  lunchEnd?: number;
+  lunchBreak?: {
+    start: number;
+    end: number;
+    color: string;
+  };
 } 

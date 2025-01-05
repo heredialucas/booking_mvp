@@ -14,6 +14,9 @@ interface DayScheduleProps {
   ) => void;
 }
 
+const LUNCH_COLOR = "#FFD700"; // Color dorado para el lunch break
+const LUNCH_ICON = "🍽️";
+
 export default function DaySchedule({
   date,
   employees,
@@ -35,7 +38,53 @@ export default function DaySchedule({
     const employee = employees[employeeIndex];
     const newEmployees = [...employees];
 
-    if (employee.schedule?.start === cellIndex && employee.schedule?.end === cellIndex) {
+    // Si ya hay un horario establecido, verificamos si estamos dentro del rango
+    if (employee.schedule) {
+      const isWithinSchedule =
+        cellIndex >= employee.schedule.start &&
+        cellIndex <= employee.schedule.end;
+
+      if (isWithinSchedule) {
+        // Si ya existe un lunch break en cualquier posición, lo removemos primero
+        if (employee.schedule.lunchBreak) {
+          const { ...scheduleWithoutLunch } = employee.schedule;
+          newEmployees[employeeIndex] = {
+            ...employee,
+            schedule: {
+              ...scheduleWithoutLunch,
+              lunchBreak: {
+                start: cellIndex,
+                end: cellIndex,
+                color: LUNCH_COLOR,
+              },
+            },
+            // No modificamos las horas aquí porque ya fueron restadas anteriormente
+          };
+        } else {
+          // Si no hay lunch break previo, lo agregamos y restamos las horas
+          newEmployees[employeeIndex] = {
+            ...employee,
+            schedule: {
+              ...employee.schedule,
+              lunchBreak: {
+                start: cellIndex,
+                end: cellIndex,
+                color: LUNCH_COLOR,
+              },
+            },
+            hours: employee.hours - 0.5, // Solo restamos cuando es la primera vez
+          };
+        }
+        onUpdateEmployees(newEmployees);
+        return;
+      }
+    }
+
+    // Si no hay horario o estamos fuera del rango, manejamos la selección normal
+    if (
+      employee.schedule?.start === cellIndex &&
+      employee.schedule?.end === cellIndex
+    ) {
       newEmployees[employeeIndex] = {
         ...employee,
         schedule: undefined,
@@ -126,7 +175,7 @@ export default function DaySchedule({
 
   const clearEmployeeSchedule = (employeeIndex: number) => {
     const newEmployees = [...employees];
-    
+
     newEmployees[employeeIndex] = {
       ...newEmployees[employeeIndex],
       schedule: undefined,
@@ -139,16 +188,46 @@ export default function DaySchedule({
     return employees.reduce((total, employee) => total + employee.hours, 0);
   };
 
-  const isScheduled = (employee: Employee, hourIndex: number, isHalfHour: boolean) => {
-    if (!employee.schedule) return false;
-    
+  const isScheduled = (
+    employee: Employee,
+    hourIndex: number,
+    isHalfHour: boolean
+  ) => {
+    if (!employee.schedule) return { isScheduled: false, isLunch: false };
+
     const cellIndex = hourIndex * 2 + (isHalfHour ? 1 : 0);
-    return cellIndex >= employee.schedule.start && cellIndex <= employee.schedule.end;
+
+    // Verificar si es hora de almuerzo
+    if (employee.schedule.lunchBreak) {
+      const { start, end } = employee.schedule.lunchBreak;
+      if (cellIndex >= start && cellIndex <= end) {
+        return { isScheduled: true, isLunch: true };
+      }
+    }
+
+    return {
+      isScheduled:
+        cellIndex >= employee.schedule.start &&
+        cellIndex <= employee.schedule.end,
+      isLunch: false,
+    };
   };
 
   return (
     <Card className="p-6 select-none max-w-[1200px] mx-auto">
       <div className="mb-4 text-lg font-medium border-b pb-2">{date}</div>
+      <div className="mb-4 text-sm flex items-center gap-2 text-gray-600 bg-gray-50 p-2 rounded">
+        <span className="flex items-center gap-1">
+          <div className="w-4 h-4 border flex items-center justify-center text-xs">
+            {LUNCH_ICON}
+          </div>
+          Lunch break
+        </span>
+        <span className="text-xs italic">
+          (Selecciona dentro del horario ya establecido para marcar el lunch
+          break)
+        </span>
+      </div>
       <div className="grid gap-0">
         <div className="grid grid-cols-[200px,1fr,auto]">
           <div className="font-medium px-2 py-1 border">Tages-pensum</div>
@@ -192,31 +271,59 @@ export default function DaySchedule({
                   className="relative h-full grid grid-cols-2"
                 >
                   <div
-                    className="border cursor-pointer"
+                    className="border cursor-pointer relative"
                     style={{
-                      backgroundColor: isScheduled(employee, hourIndex, false)
-                        ? employee.schedule?.color
-                        : "#fff",
+                      backgroundColor: (() => {
+                        const { isScheduled: isSlotScheduled, isLunch } =
+                          isScheduled(employee, hourIndex, false);
+                        if (isLunch) return "#FFFFFF";
+                        return isSlotScheduled
+                          ? employee.schedule?.color
+                          : "#fff";
+                      })(),
+                      ...(isScheduled(employee, hourIndex, false).isLunch && {
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "8px",
+                      }),
                     }}
                     onMouseDown={() =>
                       handleMouseDown(employeeIndex, hourIndex, false)
                     }
                     onMouseMove={() => handleMouseMove(hourIndex, false)}
                     onMouseUp={handleMouseUp}
-                  />
+                  >
+                    {isScheduled(employee, hourIndex, false).isLunch &&
+                      LUNCH_ICON}
+                  </div>
                   <div
-                    className="border cursor-pointer"
+                    className="border cursor-pointer relative"
                     style={{
-                      backgroundColor: isScheduled(employee, hourIndex, true)
-                        ? employee.schedule?.color
-                        : "#fff",
+                      backgroundColor: (() => {
+                        const { isScheduled: isSlotScheduled, isLunch } =
+                          isScheduled(employee, hourIndex, true);
+                        if (isLunch) return "#FFFFFF";
+                        return isSlotScheduled
+                          ? employee.schedule?.color
+                          : "#fff";
+                      })(),
+                      ...(isScheduled(employee, hourIndex, true).isLunch && {
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "8px",
+                      }),
                     }}
                     onMouseDown={() =>
                       handleMouseDown(employeeIndex, hourIndex, true)
                     }
                     onMouseMove={() => handleMouseMove(hourIndex, true)}
                     onMouseUp={handleMouseUp}
-                  />
+                  >
+                    {isScheduled(employee, hourIndex, true).isLunch &&
+                      LUNCH_ICON}
+                  </div>
                 </div>
               ))}
             </div>
