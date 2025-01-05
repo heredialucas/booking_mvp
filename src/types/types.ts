@@ -25,4 +25,15 @@ export interface Schedule {
     end: number;
     reason: string;
   }>;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+  color?: string;
+  employeeId?: string;
+  type: 'schedule' | 'event';
+  allDay?: boolean;
 } 
