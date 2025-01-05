@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Employee, ScheduleHistory } from "@/types/types";
 import { getRandomColor } from "@/lib/utils";
+import BreakReasonDialog from "@/components/BreakReasonDialog";
 
 interface DayScheduleProps {
   date: string;
@@ -26,11 +27,42 @@ export default function DaySchedule({
   const [isDragging, setIsDragging] = useState(false);
   const [startCell, setStartCell] = useState<number | null>(null);
   const [currentEmployee, setCurrentEmployee] = useState<number | null>(null);
+  const [isBreakDialogOpen, setIsBreakDialogOpen] = useState(false);
+  const [pendingBreakAction, setPendingBreakAction] = useState<{
+    employeeIndex: number;
+    cellIndex: number;
+  } | null>(null);
 
   const hours = Array.from({ length: 13 }, (_, i) => i + 8);
 
-  const promptForBreakReason = () => {
-    return window.prompt("What is the reason for this emergency break?", "");
+  const handleBreakDialogConfirm = (reason: string) => {
+    if (pendingBreakAction && reason) {
+      const { employeeIndex, cellIndex } = pendingBreakAction;
+      const employee = employees[employeeIndex];
+      const newEmployees = [...employees];
+
+      const randomBreak = {
+        start: cellIndex,
+        end: cellIndex,
+        reason,
+      };
+
+      newEmployees[employeeIndex] = {
+        ...employee,
+        schedule: {
+          ...employee.schedule!,
+          randomBreaks: [
+            ...(employee.schedule?.randomBreaks || []),
+            randomBreak,
+          ],
+        },
+        hours: employee.hours - 0.5,
+      };
+
+      onUpdateEmployees(newEmployees);
+    }
+    setIsBreakDialogOpen(false);
+    setPendingBreakAction(null);
   };
 
   const handleMouseDown = (
@@ -50,7 +82,6 @@ export default function DaySchedule({
       if (isWithinSchedule) {
         const scheduleStatus = isScheduled(employee, hourIndex, isHalfHour);
         
-        // Si no hay lunch break, establecerlo primero
         if (!employee.schedule.lunchBreak) {
           newEmployees[employeeIndex] = {
             ...employee,
@@ -65,41 +96,14 @@ export default function DaySchedule({
           };
           onUpdateEmployees(newEmployees);
           return;
-        }
-
-        // Si el slot ya está ocupado, no hacer nada
-        if (scheduleStatus.isLunch || scheduleStatus.isRandomBreak) {
+        } else if (!scheduleStatus.isLunch && !scheduleStatus.isRandomBreak) {
+          setPendingBreakAction({ employeeIndex, cellIndex });
+          setIsBreakDialogOpen(true);
           return;
         }
-
-        // Si ya hay lunch break, permitir random breaks
-        const reason = promptForBreakReason();
-        if (!reason) return;
-
-        const randomBreak = {
-          start: cellIndex,
-          end: cellIndex,
-          reason,
-        };
-
-        newEmployees[employeeIndex] = {
-          ...employee,
-          schedule: {
-            ...employee.schedule,
-            randomBreaks: [
-              ...(employee.schedule.randomBreaks || []),
-              randomBreak,
-            ],
-          },
-          hours: employee.hours - 0.5,
-        };
-
-        onUpdateEmployees(newEmployees);
-        return;
       }
     }
 
-    // Si no hay horario o estamos fuera del rango, manejamos la selección normal
     if (
       employee.schedule?.start === cellIndex &&
       employee.schedule?.end === cellIndex
@@ -250,144 +254,162 @@ export default function DaySchedule({
   };
 
   return (
-    <Card className="p-6 select-none max-w-[1200px] mx-auto">
-      <div className="mb-4 text-lg font-medium border-b pb-2">{date}</div>
-      <div className="mb-4 text-sm flex items-center gap-4 text-gray-600 bg-gray-50 p-2 rounded">
-        <span className="flex items-center gap-1">
-          <div className="w-6 h-6 border flex items-center justify-center text-base">
-            {LUNCH_ICON}
-          </div>
-          <span>Lunch break</span>
-        </span>
-        <span className="flex items-center gap-1">
-          <div className="w-6 h-6 border flex items-center justify-center text-base">
-            {RANDOM_BREAK_ICON}
-          </div>
-          <span>Emergency break</span>
-        </span>
-        <span className="text-xs italic">
-          (First select lunch break, then you can mark emergency breaks for unexpected situations)
-        </span>
-      </div>
-      <div className="grid gap-0">
-        <div className="grid grid-cols-[200px,1fr,auto]">
-          <div className="font-medium px-2 py-1 border">Tages-pensum</div>
-          <div className="grid grid-rows-2 gap-0">
-            <div className="grid grid-cols-12 gap-0">
-              {hours.slice(0, -1).map((hour) => (
-                <div key={hour} className="text-center text-sm border py-1">
-                  {hour}:00
-                </div>
-              ))}
+    <>
+      <Card className="p-6 select-none max-w-[1200px] mx-auto">
+        <div className="mb-4 text-lg font-medium border-b pb-2">{date}</div>
+        <div className="mb-4 text-sm flex items-center gap-4 text-gray-600 bg-gray-50 p-2 rounded">
+          <span className="flex items-center gap-1">
+            <div className="w-6 h-6 border flex items-center justify-center text-base">
+              {LUNCH_ICON}
             </div>
-            <div className="grid grid-cols-12 gap-0">
-              {hours.slice(1).map((hour) => (
-                <div key={hour} className="text-center text-sm border py-1">
-                  {hour}:00
-                </div>
-              ))}
+            <span>Lunch break</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <div className="w-6 h-6 border flex items-center justify-center text-base">
+              {RANDOM_BREAK_ICON}
             </div>
-          </div>
-          <div className="w-8"></div>
+            <span>Emergency break</span>
+          </span>
+          <span className="text-xs italic">
+            (First select lunch break, then you can mark emergency breaks for unexpected situations)
+          </span>
         </div>
-
-        {employees.map((employee, employeeIndex) => (
-          <div
-            key={employeeIndex}
-            className="grid grid-cols-[200px,1fr,auto] items-center"
-          >
-            <div className="grid grid-cols-2 gap-4 px-2 py-1 border">
-              <div className="bg-[#f5d6ba] px-2 py-1 truncate">
-                {employee.name}
+        <div className="grid gap-0">
+          <div className="grid grid-cols-[200px,1fr,auto]">
+            <div className="font-medium px-2 py-1 border">Tages-pensum</div>
+            <div className="grid grid-rows-2 gap-0">
+              <div className="grid grid-cols-12 gap-0">
+                {hours.slice(0, -1).map((hour) => (
+                  <div key={hour} className="text-center text-sm border py-1">
+                    {hour}:00
+                  </div>
+                ))}
               </div>
-              <div className="text-right">{employee.hours.toFixed(2)}</div>
-            </div>
-            <div
-              className="grid grid-cols-12 gap-0 h-8"
-              onMouseLeave={handleMouseUp}
-            >
-              {Array.from({ length: 12 }).map((_, hourIndex) => (
-                <div
-                  key={hourIndex}
-                  className="relative h-full grid grid-cols-2"
-                >
-                  <div
-                    className="border cursor-pointer relative"
-                    style={{
-                      backgroundColor: "#FFFFFF",
-                      ...(isScheduled(employee, hourIndex, false).isLunch && {
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "14px",
-                        padding: 0,
-                      }),
-                      ...(isScheduled(employee, hourIndex, false).isRandomBreak && {
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "14px",
-                        padding: 0,
-                      }),
-                      ...(isScheduled(employee, hourIndex, false).isScheduled && 
-                        !isScheduled(employee, hourIndex, false).isLunch && 
-                        !isScheduled(employee, hourIndex, false).isRandomBreak && {
-                        backgroundColor: employee.schedule?.color,
-                      }),
-                    }}
-                    onMouseDown={() => handleMouseDown(employeeIndex, hourIndex, false)}
-                    onMouseMove={() => handleMouseMove(hourIndex, false)}
-                    onMouseUp={handleMouseUp}
-                    title={(() => {
-                      const status = isScheduled(employee, hourIndex, false);
-                      return status.isRandomBreak ? status.breakReason : "";
-                    })()}
-                  >
-                    {isScheduled(employee, hourIndex, false).isLunch && LUNCH_ICON}
-                    {isScheduled(employee, hourIndex, false).isRandomBreak && RANDOM_BREAK_ICON}
+              <div className="grid grid-cols-12 gap-0">
+                {hours.slice(1).map((hour) => (
+                  <div key={hour} className="text-center text-sm border py-1">
+                    {hour}:00
                   </div>
-                  <div
-                    className="border cursor-pointer relative"
-                    style={{
-                      backgroundColor: (() => {
-                        const { isScheduled: isSlotScheduled, isLunch } =
-                          isScheduled(employee, hourIndex, true);
-                        if (isLunch) return "#FFFFFF";
-                        return isSlotScheduled
-                          ? employee.schedule?.color
-                          : "#fff";
-                      })(),
-                      ...(isScheduled(employee, hourIndex, true).isLunch && {
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "8px",
-                      }),
-                    }}
-                    onMouseDown={() =>
-                      handleMouseDown(employeeIndex, hourIndex, true)
-                    }
-                    onMouseMove={() => handleMouseMove(hourIndex, true)}
-                    onMouseUp={handleMouseUp}
-                  >
-                    {isScheduled(employee, hourIndex, true).isLunch &&
-                      LUNCH_ICON}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-            <button
-              onClick={() => clearEmployeeSchedule(employeeIndex)}
-              className="p-1 bg-red-500 text-white rounded w-8 h-8 flex items-center justify-center ml-2"
-            >
-              ×
-            </button>
+            <div className="w-8"></div>
           </div>
-        ))}
-      </div>
-      <div className="mt-4 text-right font-medium">
-        Total Hours: {calculateTotalHours().toFixed(2)}
-      </div>
-    </Card>
+
+          {employees.map((employee, employeeIndex) => (
+            <div
+              key={employeeIndex}
+              className="grid grid-cols-[200px,1fr,auto] items-center"
+            >
+              <div className="grid grid-cols-2 gap-4 px-2 py-1 border">
+                <div className="bg-[#f5d6ba] px-2 py-1 truncate">
+                  {employee.name}
+                </div>
+                <div className="text-right">{employee.hours.toFixed(2)}</div>
+              </div>
+              <div
+                className="grid grid-cols-12 gap-0 h-8"
+                onMouseLeave={handleMouseUp}
+              >
+                {Array.from({ length: 12 }).map((_, hourIndex) => (
+                  <div
+                    key={hourIndex}
+                    className="relative h-full grid grid-cols-2"
+                  >
+                    <div
+                      className="border cursor-pointer relative"
+                      style={{
+                        backgroundColor: "#FFFFFF",
+                        ...(isScheduled(employee, hourIndex, false).isLunch && {
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "14px",
+                          padding: 0,
+                        }),
+                        ...(isScheduled(employee, hourIndex, false).isRandomBreak && {
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "14px",
+                          padding: 0,
+                        }),
+                        ...(isScheduled(employee, hourIndex, false).isScheduled && 
+                          !isScheduled(employee, hourIndex, false).isLunch && 
+                          !isScheduled(employee, hourIndex, false).isRandomBreak && {
+                          backgroundColor: employee.schedule?.color,
+                        }),
+                      }}
+                      onMouseDown={() => handleMouseDown(employeeIndex, hourIndex, false)}
+                      onMouseMove={() => handleMouseMove(hourIndex, false)}
+                      onMouseUp={handleMouseUp}
+                      title={(() => {
+                        const status = isScheduled(employee, hourIndex, false);
+                        return status.isRandomBreak ? status.breakReason : "";
+                      })()}
+                    >
+                      {isScheduled(employee, hourIndex, false).isLunch && LUNCH_ICON}
+                      {isScheduled(employee, hourIndex, false).isRandomBreak && RANDOM_BREAK_ICON}
+                    </div>
+                    <div
+                      className="border cursor-pointer relative"
+                      style={{
+                        backgroundColor: "#FFFFFF",
+                        ...(isScheduled(employee, hourIndex, true).isLunch && {
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "14px",
+                          padding: 0,
+                        }),
+                        ...(isScheduled(employee, hourIndex, true).isRandomBreak && {
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "14px",
+                          padding: 0,
+                        }),
+                        ...(isScheduled(employee, hourIndex, true).isScheduled && 
+                          !isScheduled(employee, hourIndex, true).isLunch && 
+                          !isScheduled(employee, hourIndex, true).isRandomBreak && {
+                          backgroundColor: employee.schedule?.color,
+                        }),
+                      }}
+                      onMouseDown={() => handleMouseDown(employeeIndex, hourIndex, true)}
+                      onMouseMove={() => handleMouseMove(hourIndex, true)}
+                      onMouseUp={handleMouseUp}
+                      title={(() => {
+                        const status = isScheduled(employee, hourIndex, true);
+                        return status.isRandomBreak ? status.breakReason : "";
+                      })()}
+                    >
+                      {isScheduled(employee, hourIndex, true).isLunch && LUNCH_ICON}
+                      {isScheduled(employee, hourIndex, true).isRandomBreak && RANDOM_BREAK_ICON}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => clearEmployeeSchedule(employeeIndex)}
+                className="p-1 bg-red-500 text-white rounded w-8 h-8 flex items-center justify-center ml-2"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 text-right font-medium">
+          Total Hours: {calculateTotalHours().toFixed(2)}
+        </div>
+      </Card>
+      <BreakReasonDialog
+        isOpen={isBreakDialogOpen}
+        onClose={() => {
+          setIsBreakDialogOpen(false);
+          setPendingBreakAction(null);
+        }}
+        onConfirm={handleBreakDialogConfirm}
+      />
+    </>
   );
 }
