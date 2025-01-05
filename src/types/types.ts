@@ -1,7 +1,12 @@
 export interface Employee {
   name: string;
   hours: number;
-  schedule?: Schedule;
+  defaultColor?: string;
+  schedule?: {
+    start: number;
+    end: number;
+    color: string;
+  };
 }
 
 export interface ScheduleHistory {

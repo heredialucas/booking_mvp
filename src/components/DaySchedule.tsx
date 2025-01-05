@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Employee, ScheduleHistory } from "@/types/types";
+import { getRandomColor } from "@/lib/utils";
 
 interface DayScheduleProps {
   date: string;
   employees: Employee[];
   onUpdateEmployees: (employees: Employee[]) => void;
-  onUpdateHistory: (updater: (prev: ScheduleHistory[]) => ScheduleHistory[]) => void;
+  onUpdateHistory: (
+    updater: (prev: ScheduleHistory[]) => ScheduleHistory[]
+  ) => void;
 }
 
 export default function DaySchedule({
@@ -29,25 +32,25 @@ export default function DaySchedule({
     isHalfHour: boolean
   ) => {
     const cellIndex = hourIndex * 2 + (isHalfHour ? 1 : 0);
-    
     const employee = employees[employeeIndex];
     const newEmployees = [...employees];
-    
+
     if (employee.schedule?.start === cellIndex && employee.schedule?.end === cellIndex) {
       newEmployees[employeeIndex] = {
         ...employee,
         schedule: undefined,
-        hours: 0
+        hours: 0,
       };
     } else {
+      const color = employee.defaultColor || getRandomColor();
       newEmployees[employeeIndex] = {
         ...employee,
         schedule: {
           start: cellIndex,
           end: cellIndex,
-          color: employee.schedule?.color || "bg-blue-500"
+          color,
         },
-        hours: 0.5
+        hours: 0.5,
       };
     }
 
@@ -93,13 +96,12 @@ export default function DaySchedule({
     const startCell = Math.min(start, end);
     const endCell = Math.max(start, end);
 
-    const previousSchedule = employees[employeeIndex].schedule;
+    const employee = employees[employeeIndex];
+    const previousSchedule = employee.schedule;
     const newSchedule = {
       start: startCell,
       end: endCell,
-      color: employees[employeeIndex].schedule?.color || "bg-blue-500",
-      lunchStart: undefined,
-      lunchEnd: undefined
+      color: employee.defaultColor || getRandomColor(),
     };
 
     const hours = (endCell - startCell + 1) / 2;
@@ -107,7 +109,7 @@ export default function DaySchedule({
     newEmployees[employeeIndex] = {
       ...newEmployees[employeeIndex],
       schedule: newSchedule,
-      hours
+      hours,
     };
 
     onUpdateEmployees(newEmployees);
@@ -124,6 +126,7 @@ export default function DaySchedule({
 
   const clearEmployeeSchedule = (employeeIndex: number) => {
     const newEmployees = [...employees];
+    
     newEmployees[employeeIndex] = {
       ...newEmployees[employeeIndex],
       schedule: undefined,
@@ -136,25 +139,11 @@ export default function DaySchedule({
     return employees.reduce((total, employee) => total + employee.hours, 0);
   };
 
-  const getScheduleStatus = (employee: Employee, hourIndex: number) => {
-    if (!employee.schedule || employee.schedule.start === undefined || employee.schedule.end === undefined) {
-      return { isScheduledFull: false, isScheduledHalf: false, isLunch: false };
-    }
-
-    const cellIndex = hourIndex * 2;
-    const isLunch = employee.schedule.lunchStart !== undefined && 
-      (cellIndex === employee.schedule.lunchStart || 
-       cellIndex === employee.schedule.lunchEnd);
-
-    const isScheduledFull =
-      cellIndex >= employee.schedule.start &&
-      cellIndex + 1 <= employee.schedule.end;
-
-    const isScheduledHalf =
-      cellIndex === employee.schedule.start ||
-      cellIndex + 1 === employee.schedule.end;
-
-    return { isScheduledFull, isScheduledHalf, isLunch };
+  const isScheduled = (employee: Employee, hourIndex: number, isHalfHour: boolean) => {
+    if (!employee.schedule) return false;
+    
+    const cellIndex = hourIndex * 2 + (isHalfHour ? 1 : 0);
+    return cellIndex >= employee.schedule.start && cellIndex <= employee.schedule.end;
   };
 
   return (
@@ -198,17 +187,17 @@ export default function DaySchedule({
               onMouseLeave={handleMouseUp}
             >
               {Array.from({ length: 12 }).map((_, hourIndex) => (
-                <div key={hourIndex} className="relative h-full grid grid-cols-2">
+                <div
+                  key={hourIndex}
+                  className="relative h-full grid grid-cols-2"
+                >
                   <div
-                    className={`border ${
-                      employee.schedule?.start !== undefined && (
-                        getScheduleStatus(employee, hourIndex).isScheduledFull ||
-                        (getScheduleStatus(employee, hourIndex).isScheduledHalf &&
-                          hourIndex * 2 >= employee.schedule.start)
-                      )
-                        ? employee.schedule.color
-                        : "bg-white"
-                    } cursor-pointer`}
+                    className="border cursor-pointer"
+                    style={{
+                      backgroundColor: isScheduled(employee, hourIndex, false)
+                        ? employee.schedule?.color
+                        : "#fff",
+                    }}
                     onMouseDown={() =>
                       handleMouseDown(employeeIndex, hourIndex, false)
                     }
@@ -216,15 +205,12 @@ export default function DaySchedule({
                     onMouseUp={handleMouseUp}
                   />
                   <div
-                    className={`border ${
-                      employee.schedule?.start !== undefined && (
-                        getScheduleStatus(employee, hourIndex).isScheduledFull ||
-                        (getScheduleStatus(employee, hourIndex).isScheduledHalf &&
-                          hourIndex * 2 + 1 <= employee.schedule.end)
-                      )
-                        ? employee.schedule.color
-                        : "bg-white"
-                    } cursor-pointer`}
+                    className="border cursor-pointer"
+                    style={{
+                      backgroundColor: isScheduled(employee, hourIndex, true)
+                        ? employee.schedule?.color
+                        : "#fff",
+                    }}
                     onMouseDown={() =>
                       handleMouseDown(employeeIndex, hourIndex, true)
                     }

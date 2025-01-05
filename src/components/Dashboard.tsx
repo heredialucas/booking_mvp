@@ -6,14 +6,23 @@ import { Employee, ScheduleHistory } from "@/types/types";
 import DaySchedule from "./DaySchedule";
 import EmployeePanel from "./EmployeePanel";
 import HistoryPanel from "./HistoryPanel";
+import { getRandomColor } from "@/lib/utils";
 
 type ActivePanel = "schedule" | "employees" | "history";
 
 export default function Dashboard() {
   const [activePanel, setActivePanel] = useState<ActivePanel>("schedule");
   const [employees, setEmployees] = useState<Employee[]>([
-    { name: "Worker 1", hours: 0, schedule: { start: 0, end: 0, color: "bg-red-500" } },
-    { name: "Worker 2", hours: 0, schedule: { start: 0, end: 0, color: "bg-blue-500" } },
+    { 
+      name: "Worker 1", 
+      hours: 0, 
+      defaultColor: getRandomColor(),
+    },
+    { 
+      name: "Worker 2", 
+      hours: 0, 
+      defaultColor: getRandomColor(),
+    },
   ]);
   const [scheduleHistory, setScheduleHistory] = useState<ScheduleHistory[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -25,7 +34,14 @@ export default function Dashboard() {
   };
 
   const handleAddEmployee = () => {
-    setEmployees([...employees, { name: `Worker ${employees.length + 1}`, hours: 0 }]);
+    setEmployees((prev) => [
+      ...prev,
+      {
+        name: `Empleado ${prev.length + 1}`,
+        hours: 0,
+        defaultColor: getRandomColor(),
+      },
+    ]);
   };
 
   const handleRemoveEmployee = (index: number) => {

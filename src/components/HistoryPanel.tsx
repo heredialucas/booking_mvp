@@ -2,11 +2,20 @@
 
 import { Card } from "@/components/ui/card";
 import { Employee, ScheduleHistory } from "@/types/types";
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  getSortedRowModel,
+  SortingState,
+} from "@tanstack/react-table";
+import { useState } from "react";
 
 interface HistoryPanelProps {
   history: ScheduleHistory[];
   employees: Employee[];
-  onCopySchedule: (schedule: Employee['schedule']) => void;
+  onCopySchedule: (schedule: Employee["schedule"]) => void;
 }
 
 export default function HistoryPanel({
@@ -14,46 +23,92 @@ export default function HistoryPanel({
   employees,
   onCopySchedule,
 }: HistoryPanelProps) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const columnHelper = createColumnHelper<ScheduleHistory>();
+
+  const formatSchedule = (schedule?: Employee["schedule"]) => {
+    if (!schedule) return "Sin horario";
+    return `${schedule.start / 2 + 8}:${schedule.start % 2 ? "30" : "00"} - 
+            ${schedule.end / 2 + 8}:${schedule.end % 2 ? "30" : "00"}`;
+  };
+
+  const columns = [
+    columnHelper.accessor("timestamp", {
+      header: "Fecha y Hora",
+      cell: (info) => info.getValue().toLocaleString(),
+    }),
+    columnHelper.accessor("employeeIndex", {
+      header: "Empleado",
+      cell: (info) => employees[info.getValue()].name,
+    }),
+    columnHelper.accessor("previousSchedule", {
+      header: "Horario Anterior",
+      cell: (info) => formatSchedule(info.getValue()),
+    }),
+    columnHelper.accessor("newSchedule", {
+      header: "Nuevo Horario",
+      cell: (info) => formatSchedule(info.getValue()),
+    }),
+    columnHelper.display({
+      id: "actions",
+      cell: (info) => (
+        <button
+          onClick={() => onCopySchedule(info.row.original.newSchedule)}
+          className="px-2 py-1 bg-green-500 text-white rounded text-sm"
+        >
+          Copiar
+        </button>
+      ),
+    }),
+  ];
+
+  const table = useReactTable({
+    data: history,
+    columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
+
   return (
     <Card className="p-6">
       <h2 className="text-xl font-medium mb-6">Historial de Cambios</h2>
-      <div className="space-y-4">
-        {history.map((entry, index) => (
-          <Card key={index} className="p-4">
-            <div className="grid grid-cols-2 gap-4 mb-2">
-              <div>
-                <strong>Empleado:</strong> {employees[entry.employeeIndex].name}
-              </div>
-              <div>
-                <strong>Fecha:</strong> {entry.timestamp.toLocaleString()}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <strong>Horario Anterior:</strong>
-                {entry.previousSchedule
-                  ? ` ${entry.previousSchedule.start/2 + 8}:${entry.previousSchedule.start % 2 ? "30" : "00"} - 
-                     ${entry.previousSchedule.end/2 + 8}:${entry.previousSchedule.end % 2 ? "30" : "00"}`
-                  : " Sin horario"}
-              </div>
-              <div>
-                <strong>Nuevo Horario:</strong>
-                {entry.newSchedule ? 
-                  ` ${entry.newSchedule.start/2 + 8}:${entry.newSchedule.start % 2 ? "30" : "00"} - 
-                     ${entry.newSchedule.end/2 + 8}:${entry.newSchedule.end % 2 ? "30" : "00"}`
-                  : " Sin horario"
-                }
-              </div>
-            </div>
-            <button
-              onClick={() => onCopySchedule(entry.newSchedule)}
-              className="w-full p-2 bg-green-500 text-white rounded"
-            >
-              Copiar Horario
-            </button>
-          </Card>
-        ))}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="px-4 py-2 text-left bg-gray-100 cursor-pointer"
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id} className="border-b">
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} className="px-4 py-2">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </Card>
   );
-} 
+}
