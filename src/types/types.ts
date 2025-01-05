@@ -1,10 +1,18 @@
+export interface Schedule {
+  date: string;
+  start: number;
+  end: number;
+  color: string;
+  hours: number;
+}
+
 export interface Employee {
   id?: string;
   name: string;
   hours: number;
   defaultColor?: string;
-  schedules?: {
-    [date: string]: DaySchedule | undefined;
+  schedules: {
+    [key: string]: DaySchedule;
   };
 }
 

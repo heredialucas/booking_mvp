@@ -24,7 +24,7 @@ interface StoredEvent extends Omit<CalendarEvent, "start" | "end"> {
 }
 
 interface StoredEmployee extends Omit<Employee, "schedules"> {
-  schedules?: {
+  schedules: {
     [key: string]: DayScheduleType;
   };
 }
@@ -34,7 +34,7 @@ const formatScheduleToEvent = (
   date: string,
   schedule: DayScheduleType
 ): CalendarEvent => {
-  const [year, month, day] = date.split('-').map(Number);
+  const [year, month, day] = date.split("-").map(Number);
   const startDate = new Date(year, month - 1, day); // month - 1 porque los meses en JS van de 0-11
   const endDate = new Date(year, month - 1, day);
 
@@ -58,8 +58,18 @@ export default function Dashboard() {
   const [activePanel, setActivePanel] = useState<ActivePanel>("calendar");
   const [calendarView, setCalendarView] = useState<CalendarView>("month");
   const [employees, setEmployees] = useState<Employee[]>([
-    { name: "Worker 1", hours: 0, defaultColor: getRandomColor() },
-    { name: "Worker 2", hours: 0, defaultColor: getRandomColor() },
+    {
+      name: "Worker 1",
+      hours: 0,
+      defaultColor: getRandomColor(),
+      schedules: {},
+    },
+    {
+      name: "Worker 2",
+      hours: 0,
+      defaultColor: getRandomColor(),
+      schedules: {},
+    },
   ]);
   const [scheduleHistory, setScheduleHistory] = useState<ScheduleHistory[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -88,7 +98,7 @@ export default function Dashboard() {
       const parsedEmployees = JSON.parse(savedEmployees).map(
         (employee: StoredEmployee) => ({
           ...employee,
-          schedules: employee.schedules || undefined,
+          schedules: employee.schedules || [],
         })
       );
       setEmployees(parsedEmployees);
@@ -114,17 +124,19 @@ export default function Dashboard() {
     });
 
     // Mantener solo los eventos especiales del estado actual
-    const currentSpecialEvents = events.filter((event) => event.type === "special");
-    
+    const currentSpecialEvents = events.filter(
+      (event) => event.type === "special"
+    );
+
     // Comparar si realmente necesitamos actualizar
     const newEvents = [...currentSpecialEvents, ...scheduleEvents];
     const currentEventsStr = JSON.stringify(events);
     const newEventsStr = JSON.stringify(newEvents);
-    
+
     if (currentEventsStr !== newEventsStr) {
       setEvents(newEvents);
     }
-  }, [employees]); // Solo depender de employees
+  }, [employees, events]); // Agregar events a las dependencias
 
   // Mantener el useEffect para guardar en localStorage
   useEffect(() => {
@@ -161,6 +173,7 @@ export default function Dashboard() {
         name: `Empleado ${prev.length + 1}`,
         hours: 0,
         defaultColor: getRandomColor(),
+        schedules: {},
       },
     ]);
   };

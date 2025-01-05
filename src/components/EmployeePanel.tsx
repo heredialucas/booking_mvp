@@ -20,7 +20,7 @@ export default function EmployeePanel({
 }: EmployeePanelProps) {
   const calculateEmployeeStats = (employee: Employee) => {
     console.log(employee);
-    if (!employee.schedule)
+    if (!employee.schedules || Object.keys(employee.schedules).length === 0)
       return { dailyHours: 0, weeklyHours: 0, monthlyHours: 0 };
 
     const dailyHours = employee.hours;
@@ -39,12 +39,12 @@ export default function EmployeePanel({
     onUpdateEmployee(index, {
       ...employee,
       defaultColor: color,
-      schedule: employee.schedule
-        ? {
-            ...employee.schedule,
-            color,
-          }
-        : undefined,
+      schedules: Object.fromEntries(
+        Object.entries(employee.schedules).map(([date, schedule]) => [
+          date,
+          { ...schedule, color }
+        ])
+      )
     });
   };
 

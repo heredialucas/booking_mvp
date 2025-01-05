@@ -1,13 +1,14 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { Employee, ScheduleHistory } from "@/types/types";
+import { Employee, ScheduleHistory, DaySchedule } from "@/types/types";
 
 interface SidebarProps {
   employees: Employee[];
   scheduleHistory: ScheduleHistory[];
+  selectedDate: Date;
   onUpdateEmployee: (index: number, employee: Employee) => void;
-  onCopySchedule: (schedule: Employee['schedule']) => void;
+  onCopySchedule: (schedule: DaySchedule) => void;
   onAddEmployee: () => void;
   onRemoveEmployee: (index: number) => void;
 }
@@ -15,6 +16,7 @@ interface SidebarProps {
 export default function Sidebar({
   employees,
   scheduleHistory,
+  selectedDate,
   onUpdateEmployee,
   onCopySchedule,
   onAddEmployee,
@@ -30,6 +32,12 @@ export default function Sidebar({
     "bg-indigo-500",
     "bg-orange-500",
   ];
+
+  const getDateKey = (date: Date) => {
+    return date.toISOString().split('T')[0];
+  };
+
+  const dateKey = getDateKey(selectedDate);
 
   return (
     <Card className="w-64 p-4 h-screen overflow-y-auto">
@@ -56,17 +64,19 @@ export default function Sidebar({
                 <button
                   key={color}
                   className={`w-6 h-6 rounded ${color} ${
-                    employee.schedule?.color === color
+                    employee.schedules[dateKey]?.color === color
                       ? "ring-2 ring-offset-2 ring-black"
                       : ""
                   }`}
                   onClick={() =>
                     onUpdateEmployee(index, {
                       ...employee,
-                      schedule: {
-                        start: employee.schedule?.start || 0,
-                        end: employee.schedule?.end || 0,
-                        color,
+                      schedules: {
+                        ...employee.schedules,
+                        [dateKey]: {
+                          ...employee.schedules[dateKey],
+                          color,
+                        },
                       },
                     })
                   }
@@ -93,8 +103,9 @@ export default function Sidebar({
               <strong>Fecha:</strong> {entry.timestamp.toLocaleString()}
             </div>
             <button
-              onClick={() => onCopySchedule(entry.newSchedule)}
+              onClick={() => entry.newSchedule && onCopySchedule(entry.newSchedule)}
               className="mt-2 w-full p-1 bg-green-500 text-white rounded"
+              disabled={!entry.newSchedule}
             >
               Copiar Horario
             </button>

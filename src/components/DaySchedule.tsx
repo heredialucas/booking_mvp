@@ -84,7 +84,7 @@ export default function DaySchedule({
     const dateKey = getDateKey(date);
     const employee = employees[employeeIndex];
     const newEmployees = [...employees];
-    const currentSchedule = employee.schedules?.[dateKey];
+    const currentSchedule = employee.schedules[dateKey];
 
     if (currentSchedule) {
       const isWithinSchedule =
@@ -118,23 +118,21 @@ export default function DaySchedule({
       }
     }
 
-    // Crear o eliminar horario
-    const newSchedule =
-      currentSchedule?.start === cellIndex && currentSchedule?.end === cellIndex
-        ? undefined
-        : {
-            start: cellIndex,
-            end: cellIndex,
-            color: employee.defaultColor || getRandomColor(),
-            hours: 0.5,
-          };
+    const newSchedule: DaySchedule = {
+      start: cellIndex,
+      end: cellIndex,
+      color: employee.defaultColor || getRandomColor(),
+      hours: 0.5,
+      lunchBreak: undefined,
+      randomBreaks: []
+    };
 
     newEmployees[employeeIndex] = {
       ...employee,
       schedules: {
         ...employee.schedules,
-        [dateKey]: newSchedule,
-      },
+        [dateKey]: newSchedule
+      }
     };
 
     onUpdateEmployees(newEmployees);
@@ -180,7 +178,6 @@ export default function DaySchedule({
     const startCell = Math.min(start, end);
     const endCell = Math.max(start, end);
     const hours = (endCell - startCell + 1) / 2;
-
     const employee = employees[employeeIndex];
     const dateKey = getDateKey(date);
 
@@ -189,14 +186,16 @@ export default function DaySchedule({
       end: endCell,
       color: employee.defaultColor || getRandomColor(),
       hours,
+      lunchBreak: undefined,
+      randomBreaks: []
     };
 
     newEmployees[employeeIndex] = {
       ...employee,
       schedules: {
-        ...(employee.schedules || {}),
-        [dateKey]: newSchedule,
-      },
+        ...employee.schedules,
+        [dateKey]: newSchedule
+      }
     };
 
     onUpdateEmployees(newEmployees);
@@ -205,21 +204,15 @@ export default function DaySchedule({
   const clearEmployeeSchedule = (employeeIndex: number) => {
     const newEmployees = [...employees];
     const employee = newEmployees[employeeIndex];
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { [getDateKey(date)]: removed, ...remainingSchedules } = employee.schedules;
 
-    if (employee.schedules) {
-      // Eliminar solo el horario del día específico
-      const { ...remainingSchedules } = employee.schedules;
+    newEmployees[employeeIndex] = {
+      ...employee,
+      schedules: remainingSchedules,
+    };
 
-      newEmployees[employeeIndex] = {
-        ...employee,
-        schedules:
-          Object.keys(remainingSchedules).length > 0
-            ? remainingSchedules
-            : undefined,
-      };
-
-      onUpdateEmployees(newEmployees);
-    }
+    onUpdateEmployees(newEmployees);
   };
 
   const calculateTotalHours = () => {

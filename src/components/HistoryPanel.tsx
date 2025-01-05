@@ -1,7 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { Employee, ScheduleHistory } from "@/types/types";
+import { Employee, ScheduleHistory, DaySchedule } from "@/types/types";
 import {
   createColumnHelper,
   flexRender,
@@ -15,7 +15,7 @@ import { useState } from "react";
 interface HistoryPanelProps {
   history: ScheduleHistory[];
   employees: Employee[];
-  onCopySchedule: (schedule: Employee["schedule"]) => void;
+  onCopySchedule: (schedule: DaySchedule) => void;
 }
 
 export default function HistoryPanel({
@@ -26,7 +26,7 @@ export default function HistoryPanel({
   const [sorting, setSorting] = useState<SortingState>([]);
   const columnHelper = createColumnHelper<ScheduleHistory>();
 
-  const formatSchedule = (schedule?: Employee["schedule"]) => {
+  const formatSchedule = (schedule?: DaySchedule) => {
     if (!schedule) return "Sin horario";
     return `${schedule.start / 2 + 8}:${schedule.start % 2 ? "30" : "00"} - 
             ${schedule.end / 2 + 8}:${schedule.end % 2 ? "30" : "00"}`;
@@ -51,9 +51,9 @@ export default function HistoryPanel({
     }),
     columnHelper.display({
       id: "actions",
-      cell: (info) => (
+      cell: (info) => info.row.original.newSchedule && (
         <button
-          onClick={() => onCopySchedule(info.row.original.newSchedule)}
+          onClick={() => onCopySchedule(info.row.original.newSchedule!)}
           className="px-2 py-1 bg-green-500 text-white rounded text-sm"
         >
           Copiar
