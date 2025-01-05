@@ -30,6 +30,28 @@ export default function DaySchedule({
   ) => {
     const cellIndex = hourIndex * 2 + (isHalfHour ? 1 : 0);
     
+    const employee = employees[employeeIndex];
+    const newEmployees = [...employees];
+    
+    if (employee.schedule?.start === cellIndex && employee.schedule?.end === cellIndex) {
+      newEmployees[employeeIndex] = {
+        ...employee,
+        schedule: undefined,
+        hours: 0
+      };
+    } else {
+      newEmployees[employeeIndex] = {
+        ...employee,
+        schedule: {
+          start: cellIndex,
+          end: cellIndex,
+          color: employee.schedule?.color || "bg-blue-500"
+        },
+        hours: 0.5
+      };
+    }
+
+    onUpdateEmployees(newEmployees);
     setIsDragging(true);
     setStartCell(cellIndex);
     setCurrentEmployee(employeeIndex);
@@ -38,11 +60,25 @@ export default function DaySchedule({
   const handleMouseMove = (hourIndex: number, isHalfHour: boolean) => {
     if (isDragging && currentEmployee !== null && startCell !== null) {
       const currentCell = hourIndex * 2 + (isHalfHour ? 1 : 0);
-      updateEmployeeSchedule(currentEmployee, startCell, currentCell);
+      if (currentCell !== startCell) {
+        updateEmployeeSchedule(currentEmployee, startCell, currentCell);
+      }
     }
   };
 
   const handleMouseUp = () => {
+    if (isDragging && currentEmployee !== null && startCell !== null) {
+      const previousSchedule = employees[currentEmployee].schedule;
+      onUpdateHistory((prevHistory) => [
+        ...prevHistory,
+        {
+          timestamp: new Date(),
+          employeeIndex: currentEmployee,
+          previousSchedule,
+          newSchedule: employees[currentEmployee].schedule,
+        },
+      ]);
+    }
     setIsDragging(false);
     setStartCell(null);
     setCurrentEmployee(null);
@@ -101,8 +137,9 @@ export default function DaySchedule({
   };
 
   const getScheduleStatus = (employee: Employee, hourIndex: number) => {
-    if (!employee.schedule || !employee.schedule.start || !employee.schedule.end)
+    if (!employee.schedule || employee.schedule.start === undefined || employee.schedule.end === undefined) {
       return { isScheduledFull: false, isScheduledHalf: false, isLunch: false };
+    }
 
     const cellIndex = hourIndex * 2;
     const isLunch = employee.schedule.lunchStart !== undefined && 
@@ -110,12 +147,12 @@ export default function DaySchedule({
        cellIndex === employee.schedule.lunchEnd);
 
     const isScheduledFull =
-      hourIndex * 2 >= employee.schedule.start &&
-      hourIndex * 2 + 1 <= employee.schedule.end;
+      cellIndex >= employee.schedule.start &&
+      cellIndex + 1 <= employee.schedule.end;
 
     const isScheduledHalf =
-      hourIndex * 2 === employee.schedule.start ||
-      hourIndex * 2 + 1 === employee.schedule.end;
+      cellIndex === employee.schedule.start ||
+      cellIndex + 1 === employee.schedule.end;
 
     return { isScheduledFull, isScheduledHalf, isLunch };
   };
@@ -171,7 +208,7 @@ export default function DaySchedule({
                       )
                         ? employee.schedule.color
                         : "bg-white"
-                    } cursor-pointer hover:bg-gray-100`}
+                    } cursor-pointer`}
                     onMouseDown={() =>
                       handleMouseDown(employeeIndex, hourIndex, false)
                     }
@@ -187,7 +224,7 @@ export default function DaySchedule({
                       )
                         ? employee.schedule.color
                         : "bg-white"
-                    } cursor-pointer hover:bg-gray-100`}
+                    } cursor-pointer`}
                     onMouseDown={() =>
                       handleMouseDown(employeeIndex, hourIndex, true)
                     }
