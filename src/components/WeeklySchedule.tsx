@@ -41,12 +41,7 @@ export default function WeeklySchedule({
         {weekDays.map((date) => (
           <DaySchedule
             key={date.toISOString()}
-            date={date.toLocaleDateString('es-ES', {
-              weekday: 'long',
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-            })}
+            date={date}
             employees={employees}
             onUpdateEmployees={onUpdateEmployees}
             onUpdateHistory={onUpdateHistory}

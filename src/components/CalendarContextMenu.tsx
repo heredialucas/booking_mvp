@@ -15,32 +15,34 @@ export default function CalendarContextMenu({
 }: CalendarContextMenuProps) {
   if (!position) return null;
 
+  const handleAction = (action: () => void) => {
+    action();
+    onClose();
+  };
+
   return (
-    <>
-      <div className="fixed inset-0" onClick={onClose} />
-      <div
-        className="fixed z-50 bg-white rounded-lg shadow-lg py-1 w-48"
-        style={{ top: position.y, left: position.x }}
+    <div
+      className="context-menu fixed z-50 bg-white rounded-lg shadow-lg py-1 w-48"
+      style={{ top: position.y, left: position.x }}
+    >
+      <button
+        className="w-full px-4 py-2 text-left hover:bg-gray-100"
+        onClick={() => handleAction(onViewDay)}
       >
-        <button
-          className="w-full px-4 py-2 text-left hover:bg-gray-100"
-          onClick={onViewDay}
-        >
-          Ver día
-        </button>
-        <button
-          className="w-full px-4 py-2 text-left hover:bg-gray-100"
-          onClick={onViewWeek}
-        >
-          Ver semana
-        </button>
-        <button
-          className="w-full px-4 py-2 text-left hover:bg-gray-100"
-          onClick={onCreateEvent}
-        >
-          Crear evento
-        </button>
-      </div>
-    </>
+        Ver día
+      </button>
+      <button
+        className="w-full px-4 py-2 text-left hover:bg-gray-100"
+        onClick={() => handleAction(onViewWeek)}
+      >
+        Ver semana
+      </button>
+      <button
+        className="w-full px-4 py-2 text-left hover:bg-gray-100"
+        onClick={() => handleAction(onCreateEvent)}
+      >
+        Crear evento
+      </button>
+    </div>
   );
 } 

@@ -1,21 +1,25 @@
 export interface Employee {
+  id?: string;
   name: string;
   hours: number;
   defaultColor?: string;
-  schedule?: Schedule;
+  schedules?: {
+    [date: string]: DaySchedule | undefined;
+  };
 }
 
 export interface ScheduleHistory {
   timestamp: Date;
   employeeIndex: number;
-  previousSchedule: Schedule | undefined;
-  newSchedule: Schedule | undefined;
+  previousSchedule: DaySchedule | undefined;
+  newSchedule: DaySchedule | undefined;
 }
 
-export interface Schedule {
+export interface DaySchedule {
   start: number;
   end: number;
   color: string;
+  hours: number;
   lunchBreak?: {
     start: number;
     end: number;
@@ -34,6 +38,5 @@ export interface CalendarEvent {
   end: Date;
   color?: string;
   employeeId?: string;
-  type: 'schedule' | 'event';
-  allDay?: boolean;
+  type: 'schedule' | 'special';
 } 

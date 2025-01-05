@@ -1,17 +1,58 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Employee, ScheduleHistory, CalendarEvent } from "@/types/types";
-import DaySchedule from "./DaySchedule";
+import {
+  Employee,
+  ScheduleHistory,
+  CalendarEvent,
+  DaySchedule as DayScheduleType,
+} from "@/types/types";
 import MonthlyCalendar from "./MonthlyCalendar";
 import EmployeePanel from "./EmployeePanel";
 import HistoryPanel from "./HistoryPanel";
 import { getRandomColor } from "@/lib/utils";
 import WeeklySchedule from "./WeeklySchedule";
 import SpecialEventDialog from "./SpecialEventDialog";
+import { default as DaySchedule } from "./DaySchedule";
 
 type ActivePanel = "calendar" | "employees" | "history";
 type CalendarView = "month" | "week" | "day";
+
+interface StoredEvent extends Omit<CalendarEvent, "start" | "end"> {
+  start: string;
+  end: string;
+}
+
+interface StoredEmployee extends Omit<Employee, "schedules"> {
+  schedules?: {
+    [key: string]: DayScheduleType;
+  };
+}
+
+const formatScheduleToEvent = (
+  employee: Employee,
+  date: string,
+  schedule: DayScheduleType
+): CalendarEvent => {
+  const [year, month, day] = date.split('-').map(Number);
+  const startDate = new Date(year, month - 1, day); // month - 1 porque los meses en JS van de 0-11
+  const endDate = new Date(year, month - 1, day);
+
+  startDate.setHours(Math.floor(schedule.start / 2) + 8);
+  startDate.setMinutes((schedule.start % 2) * 30);
+
+  endDate.setHours(Math.floor(schedule.end / 2) + 8);
+  endDate.setMinutes((schedule.end % 2) * 30);
+
+  return {
+    id: `schedule-${employee.name}-${date}`,
+    title: `${employee.name} (${schedule.hours}h)`,
+    start: startDate,
+    end: endDate,
+    color: schedule.color,
+    type: "schedule",
+  };
+};
 
 export default function Dashboard() {
   const [activePanel, setActivePanel] = useState<ActivePanel>("calendar");
@@ -25,41 +66,92 @@ export default function Dashboard() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
 
-  // Convertir los horarios de los empleados a eventos
+  // Cargar eventos al iniciar
   useEffect(() => {
-    const newEvents = employees.flatMap((employee) => {
-      if (!employee.schedule) return [];
+    const savedEvents = localStorage.getItem("calendarEvents");
+    if (savedEvents) {
+      const parsedEvents = JSON.parse(savedEvents).map(
+        (event: StoredEvent) => ({
+          ...event,
+          start: new Date(event.start),
+          end: new Date(event.end),
+        })
+      );
+      setEvents(parsedEvents);
+    }
+  }, []);
 
-      const start = new Date(selectedDate);
-      const end = new Date(selectedDate);
+  // Cargar horarios de empleados al iniciar
+  useEffect(() => {
+    const savedEmployees = localStorage.getItem("employees");
+    if (savedEmployees) {
+      const parsedEmployees = JSON.parse(savedEmployees).map(
+        (employee: StoredEmployee) => ({
+          ...employee,
+          schedules: employee.schedules || undefined,
+        })
+      );
+      setEmployees(parsedEmployees);
+    }
+  }, []);
 
-      // Convertir los índices de media hora a horas reales
-      start.setHours(8 + Math.floor(employee.schedule.start / 2));
-      start.setMinutes((employee.schedule.start % 2) * 30);
+  // Agregar este useEffect para guardar empleados cuando se actualicen
+  useEffect(() => {
+    localStorage.setItem("employees", JSON.stringify(employees));
+  }, [employees]);
 
-      end.setHours(8 + Math.floor(employee.schedule.end / 2));
-      end.setMinutes((employee.schedule.end % 2) * 30);
+  // Modificar el useEffect que convierte los horarios a eventos
+  useEffect(() => {
+    const scheduleEvents = employees.flatMap((employee) => {
+      if (!employee.schedules) return [];
 
-      return [
-        {
-          id: `schedule-${employee.name}`,
-          title: employee.name,
-          start,
-          end,
-          color: employee.schedule.color,
-          employeeId: employee.name,
-          type: "schedule" as const,
-        },
-      ];
+      return Object.entries(employee.schedules)
+        .map(([date, schedule]) => {
+          if (!schedule) return null;
+          return formatScheduleToEvent(employee, date, schedule);
+        })
+        .filter((event): event is CalendarEvent => event !== null);
     });
 
-    setEvents(newEvents);
-  }, [employees, selectedDate]);
+    // Mantener solo los eventos especiales del estado actual
+    const currentSpecialEvents = events.filter((event) => event.type === "special");
+    
+    // Comparar si realmente necesitamos actualizar
+    const newEvents = [...currentSpecialEvents, ...scheduleEvents];
+    const currentEventsStr = JSON.stringify(events);
+    const newEventsStr = JSON.stringify(newEvents);
+    
+    if (currentEventsStr !== newEventsStr) {
+      setEvents(newEvents);
+    }
+  }, [employees]); // Solo depender de employees
 
-  const handleUpdateEmployee = (index: number, updatedEmployee: Employee) => {
-    const newEmployees = [...employees];
-    newEmployees[index] = updatedEmployee;
+  // Mantener el useEffect para guardar en localStorage
+  useEffect(() => {
+    const specialEvents = events.filter((event) => event.type === "special");
+    localStorage.setItem(
+      "calendarEvents",
+      JSON.stringify(
+        specialEvents.map((event) => ({
+          ...event,
+          start: event.start.toISOString(),
+          end: event.end.toISOString(),
+        }))
+      )
+    );
+  }, [events]);
+
+  const handleUpdateEmployees = (newEmployees: Employee[]) => {
     setEmployees(newEmployees);
+
+    // Actualizar localStorage
+    localStorage.setItem("employees", JSON.stringify(newEmployees));
+  };
+
+  const handleUpdateEmployee = (index: number, employee: Employee) => {
+    const newEmployees = [...employees];
+    newEmployees[index] = employee;
+    handleUpdateEmployees(newEmployees);
   };
 
   const handleAddEmployee = () => {
@@ -78,15 +170,18 @@ export default function Dashboard() {
     setEmployees(newEmployees);
   };
 
-  const handleCopySchedule = (schedule: Employee["schedule"]) => {
+  const handleCopySchedule = (schedule: DayScheduleType | undefined) => {
     if (!schedule) return;
+    const dateKey = selectedDate.toISOString().split("T")[0];
 
     const newEmployees = employees.map((emp) => ({
       ...emp,
-      schedule: {
-        start: schedule.start,
-        end: schedule.end,
-        color: emp.schedule?.color || schedule.color,
+      schedules: {
+        ...(emp.schedules || {}),
+        [dateKey]: {
+          ...schedule,
+          color: emp.schedules?.[dateKey]?.color || schedule.color,
+        },
       },
     }));
     setEmployees(newEmployees);
@@ -104,7 +199,8 @@ export default function Dashboard() {
   const handleAddSpecialEvent = (eventData: Omit<CalendarEvent, "id">) => {
     const newEvent: CalendarEvent = {
       ...eventData,
-      id: `event-${Date.now()}`,
+      id: `special-${Date.now()}`,
+      type: "special",
     };
     setEvents((prev) => [...prev, newEvent]);
   };
@@ -131,6 +227,7 @@ export default function Dashboard() {
           <MonthlyCalendar
             employees={employees}
             events={events}
+            selectedDate={selectedDate}
             onSelectDate={handleDateSelect}
             onNavigate={setSelectedDate}
             onSelectSlot={handleSelectSlot}
@@ -166,12 +263,7 @@ export default function Dashboard() {
               </button>
             </div>
             <DaySchedule
-              date={selectedDate.toLocaleDateString("es-ES", {
-                weekday: "long",
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-              })}
+              date={selectedDate}
               employees={employees}
               onUpdateEmployees={setEmployees}
               onUpdateHistory={setScheduleHistory}
@@ -252,9 +344,9 @@ export default function Dashboard() {
         {activePanel === "employees" && (
           <EmployeePanel
             employees={employees}
-            onUpdateEmployee={handleUpdateEmployee}
             onAddEmployee={handleAddEmployee}
             onRemoveEmployee={handleRemoveEmployee}
+            onUpdateEmployee={handleUpdateEmployee}
           />
         )}
 

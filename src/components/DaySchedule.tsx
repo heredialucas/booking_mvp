@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Employee, ScheduleHistory } from "@/types/types";
+import { Employee, ScheduleHistory, type DaySchedule } from "@/types/types";
 import { getRandomColor } from "@/lib/utils";
 import BreakReasonDialog from "@/components/BreakReasonDialog";
 
 interface DayScheduleProps {
-  date: string;
+  date: Date;
   employees: Employee[];
   onUpdateEmployees: (employees: Employee[]) => void;
   onUpdateHistory: (
@@ -17,6 +17,13 @@ interface DayScheduleProps {
 
 const LUNCH_ICON = "🍽️";
 const RANDOM_BREAK_ICON = "⚠️";
+
+const getDateKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 export default function DaySchedule({
   date,
@@ -39,27 +46,30 @@ export default function DaySchedule({
     if (pendingBreakAction && reason) {
       const { employeeIndex, cellIndex } = pendingBreakAction;
       const employee = employees[employeeIndex];
-      const newEmployees = [...employees];
+      const dateKey = getDateKey(date);
+      const currentSchedule = employee.schedules?.[dateKey];
 
-      const randomBreak = {
-        start: cellIndex,
-        end: cellIndex,
-        reason,
-      };
-
-      newEmployees[employeeIndex] = {
-        ...employee,
-        schedule: {
-          ...employee.schedule!,
+      if (currentSchedule) {
+        const newSchedule: DaySchedule = {
+          ...currentSchedule,
           randomBreaks: [
-            ...(employee.schedule?.randomBreaks || []),
-            randomBreak,
+            ...(currentSchedule.randomBreaks || []),
+            { start: cellIndex, end: cellIndex, reason },
           ],
-        },
-        hours: employee.hours - 0.5,
-      };
+          hours: currentSchedule.hours - 0.5,
+        };
 
-      onUpdateEmployees(newEmployees);
+        const newEmployees = [...employees];
+        newEmployees[employeeIndex] = {
+          ...employee,
+          schedules: {
+            ...(employee.schedules || {}),
+            [dateKey]: newSchedule,
+          },
+        };
+
+        onUpdateEmployees(newEmployees);
+      }
     }
     setIsBreakDialogOpen(false);
     setPendingBreakAction(null);
@@ -71,28 +81,32 @@ export default function DaySchedule({
     isHalfHour: boolean
   ) => {
     const cellIndex = hourIndex * 2 + (isHalfHour ? 1 : 0);
+    const dateKey = getDateKey(date);
     const employee = employees[employeeIndex];
     const newEmployees = [...employees];
+    const currentSchedule = employee.schedules?.[dateKey];
 
-    if (employee.schedule) {
+    if (currentSchedule) {
       const isWithinSchedule =
-        cellIndex >= employee.schedule.start &&
-        cellIndex <= employee.schedule.end;
+        cellIndex >= currentSchedule.start && cellIndex <= currentSchedule.end;
 
       if (isWithinSchedule) {
         const scheduleStatus = isScheduled(employee, hourIndex, isHalfHour);
-        
-        if (!employee.schedule.lunchBreak) {
+
+        if (!currentSchedule.lunchBreak) {
           newEmployees[employeeIndex] = {
             ...employee,
-            schedule: {
-              ...employee.schedule,
-              lunchBreak: {
-                start: cellIndex,
-                end: cellIndex,
+            schedules: {
+              ...employee.schedules,
+              [dateKey]: {
+                ...currentSchedule,
+                lunchBreak: {
+                  start: cellIndex,
+                  end: cellIndex,
+                },
+                hours: currentSchedule.hours - 0.5,
               },
             },
-            hours: employee.hours - 0.5,
           };
           onUpdateEmployees(newEmployees);
           return;
@@ -104,27 +118,24 @@ export default function DaySchedule({
       }
     }
 
-    if (
-      employee.schedule?.start === cellIndex &&
-      employee.schedule?.end === cellIndex
-    ) {
-      newEmployees[employeeIndex] = {
-        ...employee,
-        schedule: undefined,
-        hours: 0,
-      };
-    } else {
-      const color = employee.defaultColor || getRandomColor();
-      newEmployees[employeeIndex] = {
-        ...employee,
-        schedule: {
-          start: cellIndex,
-          end: cellIndex,
-          color,
-        },
-        hours: 0.5,
-      };
-    }
+    // Crear o eliminar horario
+    const newSchedule =
+      currentSchedule?.start === cellIndex && currentSchedule?.end === cellIndex
+        ? undefined
+        : {
+            start: cellIndex,
+            end: cellIndex,
+            color: employee.defaultColor || getRandomColor(),
+            hours: 0.5,
+          };
+
+    newEmployees[employeeIndex] = {
+      ...employee,
+      schedules: {
+        ...employee.schedules,
+        [dateKey]: newSchedule,
+      },
+    };
 
     onUpdateEmployees(newEmployees);
     setIsDragging(true);
@@ -143,14 +154,15 @@ export default function DaySchedule({
 
   const handleMouseUp = () => {
     if (isDragging && currentEmployee !== null && startCell !== null) {
-      const previousSchedule = employees[currentEmployee].schedule;
+      const dateKey = getDateKey(date);
+      const previousSchedule = employees[currentEmployee].schedules?.[dateKey];
       onUpdateHistory((prevHistory) => [
         ...prevHistory,
         {
           timestamp: new Date(),
           employeeIndex: currentEmployee,
           previousSchedule,
-          newSchedule: employees[currentEmployee].schedule,
+          newSchedule: employees[currentEmployee].schedules?.[dateKey],
         },
       ]);
     }
@@ -167,48 +179,54 @@ export default function DaySchedule({
     const newEmployees = [...employees];
     const startCell = Math.min(start, end);
     const endCell = Math.max(start, end);
+    const hours = (endCell - startCell + 1) / 2;
 
     const employee = employees[employeeIndex];
-    const previousSchedule = employee.schedule;
-    const newSchedule = {
+    const dateKey = getDateKey(date);
+
+    const newSchedule: DaySchedule = {
       start: startCell,
       end: endCell,
       color: employee.defaultColor || getRandomColor(),
-    };
-
-    const hours = (endCell - startCell + 1) / 2;
-
-    newEmployees[employeeIndex] = {
-      ...newEmployees[employeeIndex],
-      schedule: newSchedule,
       hours,
     };
 
-    onUpdateEmployees(newEmployees);
-    onUpdateHistory((prevHistory) => [
-      ...prevHistory,
-      {
-        timestamp: new Date(),
-        employeeIndex,
-        previousSchedule,
-        newSchedule,
+    newEmployees[employeeIndex] = {
+      ...employee,
+      schedules: {
+        ...(employee.schedules || {}),
+        [dateKey]: newSchedule,
       },
-    ]);
+    };
+
+    onUpdateEmployees(newEmployees);
   };
 
   const clearEmployeeSchedule = (employeeIndex: number) => {
     const newEmployees = [...employees];
+    const employee = newEmployees[employeeIndex];
 
-    newEmployees[employeeIndex] = {
-      ...newEmployees[employeeIndex],
-      schedule: undefined,
-      hours: 0,
-    };
-    onUpdateEmployees(newEmployees);
+    if (employee.schedules) {
+      // Eliminar solo el horario del día específico
+      const { ...remainingSchedules } = employee.schedules;
+
+      newEmployees[employeeIndex] = {
+        ...employee,
+        schedules:
+          Object.keys(remainingSchedules).length > 0
+            ? remainingSchedules
+            : undefined,
+      };
+
+      onUpdateEmployees(newEmployees);
+    }
   };
 
   const calculateTotalHours = () => {
-    return employees.reduce((total, employee) => total + employee.hours, 0);
+    const dateKey = getDateKey(date);
+    return employees.reduce((total, employee) => {
+      return total + (employee.schedules?.[dateKey]?.hours || 0);
+    }, 0);
   };
 
   const isScheduled = (
@@ -216,14 +234,17 @@ export default function DaySchedule({
     hourIndex: number,
     isHalfHour: boolean
   ) => {
-    if (!employee.schedule)
+    const dateKey = getDateKey(date);
+    const schedule = employee.schedules?.[dateKey];
+
+    if (!schedule)
       return { isScheduled: false, isLunch: false, isRandomBreak: false };
 
     const cellIndex = hourIndex * 2 + (isHalfHour ? 1 : 0);
 
     // Verificar random breaks
-    if (employee.schedule.randomBreaks) {
-      const randomBreak = employee.schedule.randomBreaks.find(
+    if (schedule.randomBreaks) {
+      const randomBreak = schedule.randomBreaks.find(
         (rb) => cellIndex >= rb.start && cellIndex <= rb.end
       );
       if (randomBreak) {
@@ -237,26 +258,33 @@ export default function DaySchedule({
     }
 
     // Verificar lunch break
-    if (employee.schedule.lunchBreak) {
-      const { start, end } = employee.schedule.lunchBreak;
+    if (schedule.lunchBreak) {
+      const { start, end } = schedule.lunchBreak;
       if (cellIndex >= start && cellIndex <= end) {
         return { isScheduled: true, isLunch: true, isRandomBreak: false };
       }
     }
 
     return {
-      isScheduled:
-        cellIndex >= employee.schedule.start &&
-        cellIndex <= employee.schedule.end,
+      isScheduled: cellIndex >= schedule.start && cellIndex <= schedule.end,
       isLunch: false,
       isRandomBreak: false,
     };
   };
 
+  const dateKey = getDateKey(date);
+
   return (
     <>
       <Card className="p-6 select-none max-w-[1200px] mx-auto">
-        <div className="mb-4 text-lg font-medium border-b pb-2">{date}</div>
+        <div className="mb-4 text-lg font-medium border-b pb-2">
+          {date.toLocaleDateString("es-ES", {
+            weekday: "long",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          })}
+        </div>
         <div className="mb-4 text-sm flex items-center gap-4 text-gray-600 bg-gray-50 p-2 rounded">
           <span className="flex items-center gap-1">
             <div className="w-6 h-6 border flex items-center justify-center text-base">
@@ -271,7 +299,8 @@ export default function DaySchedule({
             <span>Emergency break</span>
           </span>
           <span className="text-xs italic">
-            (First select lunch break, then you can mark emergency breaks for unexpected situations)
+            (First select lunch break, then you can mark emergency breaks for
+            unexpected situations)
           </span>
         </div>
         <div className="grid gap-0">
@@ -327,20 +356,26 @@ export default function DaySchedule({
                           fontSize: "14px",
                           padding: 0,
                         }),
-                        ...(isScheduled(employee, hourIndex, false).isRandomBreak && {
+                        ...(isScheduled(employee, hourIndex, false)
+                          .isRandomBreak && {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           fontSize: "14px",
                           padding: 0,
                         }),
-                        ...(isScheduled(employee, hourIndex, false).isScheduled && 
-                          !isScheduled(employee, hourIndex, false).isLunch && 
-                          !isScheduled(employee, hourIndex, false).isRandomBreak && {
-                          backgroundColor: employee.schedule?.color,
-                        }),
+                        ...(isScheduled(employee, hourIndex, false)
+                          .isScheduled &&
+                          !isScheduled(employee, hourIndex, false).isLunch &&
+                          !isScheduled(employee, hourIndex, false)
+                            .isRandomBreak && {
+                            backgroundColor:
+                              employee.schedules?.[dateKey]?.color,
+                          }),
                       }}
-                      onMouseDown={() => handleMouseDown(employeeIndex, hourIndex, false)}
+                      onMouseDown={() =>
+                        handleMouseDown(employeeIndex, hourIndex, false)
+                      }
                       onMouseMove={() => handleMouseMove(hourIndex, false)}
                       onMouseUp={handleMouseUp}
                       title={(() => {
@@ -348,8 +383,10 @@ export default function DaySchedule({
                         return status.isRandomBreak ? status.breakReason : "";
                       })()}
                     >
-                      {isScheduled(employee, hourIndex, false).isLunch && LUNCH_ICON}
-                      {isScheduled(employee, hourIndex, false).isRandomBreak && RANDOM_BREAK_ICON}
+                      {isScheduled(employee, hourIndex, false).isLunch &&
+                        LUNCH_ICON}
+                      {isScheduled(employee, hourIndex, false).isRandomBreak &&
+                        RANDOM_BREAK_ICON}
                     </div>
                     <div
                       className="border cursor-pointer relative"
@@ -362,20 +399,26 @@ export default function DaySchedule({
                           fontSize: "14px",
                           padding: 0,
                         }),
-                        ...(isScheduled(employee, hourIndex, true).isRandomBreak && {
+                        ...(isScheduled(employee, hourIndex, true)
+                          .isRandomBreak && {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           fontSize: "14px",
                           padding: 0,
                         }),
-                        ...(isScheduled(employee, hourIndex, true).isScheduled && 
-                          !isScheduled(employee, hourIndex, true).isLunch && 
-                          !isScheduled(employee, hourIndex, true).isRandomBreak && {
-                          backgroundColor: employee.schedule?.color,
-                        }),
+                        ...(isScheduled(employee, hourIndex, true)
+                          .isScheduled &&
+                          !isScheduled(employee, hourIndex, true).isLunch &&
+                          !isScheduled(employee, hourIndex, true)
+                            .isRandomBreak && {
+                            backgroundColor:
+                              employee.schedules?.[dateKey]?.color,
+                          }),
                       }}
-                      onMouseDown={() => handleMouseDown(employeeIndex, hourIndex, true)}
+                      onMouseDown={() =>
+                        handleMouseDown(employeeIndex, hourIndex, true)
+                      }
                       onMouseMove={() => handleMouseMove(hourIndex, true)}
                       onMouseUp={handleMouseUp}
                       title={(() => {
@@ -383,8 +426,10 @@ export default function DaySchedule({
                         return status.isRandomBreak ? status.breakReason : "";
                       })()}
                     >
-                      {isScheduled(employee, hourIndex, true).isLunch && LUNCH_ICON}
-                      {isScheduled(employee, hourIndex, true).isRandomBreak && RANDOM_BREAK_ICON}
+                      {isScheduled(employee, hourIndex, true).isLunch &&
+                        LUNCH_ICON}
+                      {isScheduled(employee, hourIndex, true).isRandomBreak &&
+                        RANDOM_BREAK_ICON}
                     </div>
                   </div>
                 ))}

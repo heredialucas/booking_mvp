@@ -37,14 +37,17 @@ export default function SpecialEventDialog({
     const [endHours, endMinutes] = endTime.split(":").map(Number);
     end.setHours(endHours, endMinutes);
 
-    onConfirm({
+    const newEvent = {
       title,
       start,
       end,
       color,
-      type: 'event' as const
-    });
+      type: 'special' as const
+    };
 
+    onConfirm(newEvent);
+    
+    // Limpiar el formulario
     setTitle("");
     setStartTime("09:00");
     setEndTime("10:00");
