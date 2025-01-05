@@ -20,7 +20,6 @@ export default function DaySchedule({
   const [isDragging, setIsDragging] = useState(false);
   const [startCell, setStartCell] = useState<number | null>(null);
   const [currentEmployee, setCurrentEmployee] = useState<number | null>(null);
-  const [isLunchMode, setIsLunchMode] = useState(false);
 
   const hours = Array.from({ length: 13 }, (_, i) => i + 8);
 
@@ -31,16 +30,6 @@ export default function DaySchedule({
   ) => {
     const cellIndex = hourIndex * 2 + (isHalfHour ? 1 : 0);
     
-    if (isLunchMode) {
-      const employee = employees[employeeIndex];
-      if (employee.schedule && 
-          cellIndex >= employee.schedule.start && 
-          cellIndex <= employee.schedule.end) {
-        markLunch(employeeIndex, cellIndex);
-      }
-      return;
-    }
-
     setIsDragging(true);
     setStartCell(cellIndex);
     setCurrentEmployee(employeeIndex);
@@ -111,30 +100,6 @@ export default function DaySchedule({
     return employees.reduce((total, employee) => total + employee.hours, 0);
   };
 
-  const markLunch = (employeeIndex: number, cellIndex: number) => {
-    const newEmployees = [...employees];
-    const employee = newEmployees[employeeIndex];
-    
-    if (!employee.schedule) return;
-
-    const lunchSchedule = {
-      ...employee.schedule,
-      lunchStart: employee.schedule.lunchStart === cellIndex ? undefined : cellIndex,
-      lunchEnd: employee.schedule.lunchStart === cellIndex ? undefined : cellIndex + 1
-    };
-
-    const totalHours = (employee.schedule.end - employee.schedule.start + 1) / 2;
-    const lunchHours = lunchSchedule.lunchStart !== undefined ? 1 : 0;
-
-    newEmployees[employeeIndex] = {
-      ...employee,
-      schedule: lunchSchedule,
-      hours: totalHours - lunchHours
-    };
-
-    onUpdateEmployees(newEmployees);
-  };
-
   const getScheduleStatus = (employee: Employee, hourIndex: number) => {
     if (!employee.schedule || !employee.schedule.start || !employee.schedule.end)
       return { isScheduledFull: false, isScheduledHalf: false, isLunch: false };
@@ -159,7 +124,7 @@ export default function DaySchedule({
     <Card className="p-6 select-none max-w-[1200px] mx-auto">
       <div className="mb-4 text-lg font-medium border-b pb-2">{date}</div>
       <div className="grid gap-0">
-        <div className="grid grid-cols-[200px,1fr]">
+        <div className="grid grid-cols-[200px,1fr,auto]">
           <div className="font-medium px-2 py-1 border">Tages-pensum</div>
           <div className="grid grid-rows-2 gap-0">
             <div className="grid grid-cols-12 gap-0">
@@ -177,23 +142,13 @@ export default function DaySchedule({
               ))}
             </div>
           </div>
-        </div>
-
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setIsLunchMode(!isLunchMode)}
-            className={`p-2 rounded ${
-              isLunchMode ? 'bg-yellow-500' : 'bg-gray-200'
-            } text-white`}
-          >
-            {isLunchMode ? 'Cancelar Lunch' : 'Marcar Lunch'}
-          </button>
+          <div className="w-8"></div>
         </div>
 
         {employees.map((employee, employeeIndex) => (
           <div
             key={employeeIndex}
-            className="grid grid-cols-[200px,1fr] items-center"
+            className="grid grid-cols-[200px,1fr,auto] items-center"
           >
             <div className="grid grid-cols-2 gap-4 px-2 py-1 border">
               <div className="bg-[#f5d6ba] px-2 py-1 truncate">
@@ -214,9 +169,7 @@ export default function DaySchedule({
                         (getScheduleStatus(employee, hourIndex).isScheduledHalf &&
                           hourIndex * 2 >= employee.schedule.start)
                       )
-                        ? getScheduleStatus(employee, hourIndex).isLunch
-                          ? 'bg-yellow-300'
-                          : employee.schedule.color
+                        ? employee.schedule.color
                         : "bg-white"
                     } cursor-pointer hover:bg-gray-100`}
                     onMouseDown={() =>
@@ -227,7 +180,7 @@ export default function DaySchedule({
                   />
                   <div
                     className={`border ${
-                      employee.schedule && (
+                      employee.schedule?.start !== undefined && (
                         getScheduleStatus(employee, hourIndex).isScheduledFull ||
                         (getScheduleStatus(employee, hourIndex).isScheduledHalf &&
                           hourIndex * 2 + 1 <= employee.schedule.end)
@@ -246,9 +199,9 @@ export default function DaySchedule({
             </div>
             <button
               onClick={() => clearEmployeeSchedule(employeeIndex)}
-              className="mt-2 p-1 bg-red-500 text-white rounded"
+              className="p-1 bg-red-500 text-white rounded w-8 h-8 flex items-center justify-center ml-2"
             >
-              Limpiar Horario
+              ×
             </button>
           </div>
         ))}
