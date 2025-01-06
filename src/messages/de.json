@@ -78,6 +78,8 @@
   "common": {
     "cancel": "Abbrechen",
     "create": "Erstellen",
-    "delete": "Löschen"
+    "save": "Speichern",
+    "delete": "Löschen",
+    "copy": "Kopieren"
   }
 } 

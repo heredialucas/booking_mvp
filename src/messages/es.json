@@ -65,7 +65,8 @@
     "cancel": "Cancelar",
     "create": "Crear",
     "save": "Guardar",
-    "delete": "Eliminar"
+    "delete": "Eliminar",
+    "copy": "Copiar"
   },
   "schedule": {
     "lunch_break": "Pausa para almuerzo",
@@ -80,6 +81,22 @@
     "employee": "Empleado",
     "previous_schedule": "Horario Anterior",
     "new_schedule": "Nuevo Horario",
-    "copy": "Copiar"
+    "copy": "Copiar",
+    "title": "Historial de Horarios",
+    "daily_view": "Vista Diaria",
+    "weekly_view": "Vista Semanal",
+    "monthly_view": "Vista Mensual",
+    "copy_success": "Horario copiado exitosamente",
+    "copy_error": "Error al copiar el horario",
+    "copy_schedule": "Copiar Horario",
+    "select_view": "Seleccionar Vista",
+    "target_date": "Fecha Objetivo",
+    "select_employees": "Seleccionar Empleados",
+    "period": "Período",
+    "shifts": "turnos",
+    "schedules": "Horarios",
+    "copy_day_hint": "Se copiará el horario para la fecha seleccionada",
+    "copy_week_hint": "Se copiarán los horarios para la semana que comienza en la fecha seleccionada",
+    "copy_month_hint": "Se copiarán los horarios para el mes que comienza en la fecha seleccionada"
   }
 } 

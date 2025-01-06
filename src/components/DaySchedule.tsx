@@ -97,6 +97,8 @@ export default function DaySchedule({
     const currentSchedule = employee.schedules[dateKey];
     const newEmployees = [...employees];
 
+    const previousSchedule = currentSchedule ? { ...currentSchedule } : undefined;
+
     if (
       lastClickedCell && 
       lastClickedCell.employeeIndex === employeeIndex && 
@@ -111,8 +113,8 @@ export default function DaySchedule({
         {
           timestamp: new Date(),
           employeeIndex,
-          previousSchedule: currentSchedule,
-          newSchedule: employees[employeeIndex].schedules?.[dateKey],
+          previousSchedule,
+          newSchedule: newEmployees[employeeIndex].schedules?.[dateKey],
         },
       ]);
       
@@ -174,6 +176,16 @@ export default function DaySchedule({
     setIsDragging(true);
     setStartCell(cellIndex);
     setCurrentEmployee(employeeIndex);
+
+    onUpdateHistory((prevHistory) => [
+      ...prevHistory,
+      {
+        timestamp: new Date(),
+        employeeIndex,
+        previousSchedule,
+        newSchedule: newEmployees[employeeIndex].schedules?.[dateKey],
+      },
+    ]);
   };
 
   const handleMouseMove = (hourIndex: number, isHalfHour: boolean) => {
@@ -235,6 +247,16 @@ export default function DaySchedule({
     };
 
     onUpdateEmployees(newEmployees);
+
+    onUpdateHistory((prevHistory) => [
+      ...prevHistory,
+      {
+        timestamp: new Date(),
+        employeeIndex,
+        previousSchedule: employee.schedules?.[dateKey],
+        newSchedule: newEmployees[employeeIndex].schedules?.[dateKey],
+      },
+    ]);
   };
 
   const clearEmployeeSchedule = (employeeIndex: number) => {
@@ -250,6 +272,16 @@ export default function DaySchedule({
     };
 
     onUpdateEmployees(newEmployees);
+
+    onUpdateHistory((prevHistory) => [
+      ...prevHistory,
+      {
+        timestamp: new Date(),
+        employeeIndex,
+        previousSchedule: employee.schedules?.[getDateKey(date)],
+        newSchedule: undefined,
+      },
+    ]);
   };
 
   const calculateTotalHours = () => {
