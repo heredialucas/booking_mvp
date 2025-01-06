@@ -44,7 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const login = (username: string, password: string) => {
-    console.log("Login attempt:", username);
     const foundUser = MOCK_USERS.find(
       (u) => u.name === username && u.password === password
     );
@@ -54,7 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: foundUser.name,
         role: foundUser.role,
       };
-      console.log("User logged in:", userInfo);
       setUser(userInfo);
       return true;
     }
@@ -62,7 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    console.log("Logging out user:", user?.name);
     localStorage.removeItem("currentUser");
     setUser(null);
   };

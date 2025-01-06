@@ -59,8 +59,6 @@ export default function Dashboard() {
   // Cargar empleados al iniciar y cuando cambie el usuario
   useEffect(() => {
     const savedEmployees = localStorage.getItem("employees");
-    console.log("Loading employees, user:", user?.name);
-    console.log("Saved employees:", savedEmployees);
     if (savedEmployees) {
       try {
         const parsedEmployees = JSON.parse(savedEmployees);
@@ -75,7 +73,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (employees.length > 0) {
       // Solo guardar si hay empleados
-      console.log("Saving employees:", employees);
       localStorage.setItem("employees", JSON.stringify(employees));
     }
   }, [employees]);
@@ -84,7 +81,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (employees.length === 0) return; // No procesar si no hay empleados
 
-    console.log("Converting schedules to events, employees:", employees);
     const scheduleEvents = employees.flatMap((employee) => {
       if (!employee.schedules) return [];
 
@@ -272,12 +268,22 @@ export default function Dashboard() {
   }, [activePanel, user?.role]);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
+    <div className="min-h-screen bg-gray-100 p-2 sm:p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex gap-4">
+        <div className="flex flex-col gap-4 mb-6">
+          <div className="flex justify-end items-center gap-2 sm:gap-4">
+            <span className="text-gray-600 text-sm sm:text-base">{user?.name}</span>
             <button
-              className={`px-4 py-2 rounded ${
+              onClick={logout}
+              className="px-3 sm:px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm sm:text-base"
+            >
+              {t("auth.logout")}
+            </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              className={`px-3 sm:px-4 py-2 rounded text-sm sm:text-base w-full sm:w-auto ${
                 activePanel === "calendar"
                   ? "bg-blue-500 text-white"
                   : "bg-white"
@@ -289,7 +295,7 @@ export default function Dashboard() {
             {user?.role === "admin" && (
               <>
                 <button
-                  className={`px-4 py-2 rounded ${
+                  className={`px-3 sm:px-4 py-2 rounded text-sm sm:text-base w-full sm:w-auto ${
                     activePanel === "employees"
                       ? "bg-blue-500 text-white"
                       : "bg-white"
@@ -299,7 +305,7 @@ export default function Dashboard() {
                   {t("navigation.employees")}
                 </button>
                 <button
-                  className={`px-4 py-2 rounded ${
+                  className={`px-3 sm:px-4 py-2 rounded text-sm sm:text-base w-full sm:w-auto ${
                     activePanel === "history"
                       ? "bg-blue-500 text-white"
                       : "bg-white"
@@ -311,22 +317,13 @@ export default function Dashboard() {
               </>
             )}
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-gray-600">{user?.name}</span>
-            <button
-              onClick={logout}
-              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-            >
-              {t("auth.logout")}
-            </button>
-          </div>
         </div>
 
         {activePanel === "calendar" && (
           <div className="space-y-4">
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4">
               <button
-                className={`px-4 py-2 rounded ${
+                className={`px-3 sm:px-4 py-2 rounded text-sm sm:text-base ${
                   calendarView === "month"
                     ? "bg-blue-600 text-white"
                     : "bg-white"
@@ -336,7 +333,7 @@ export default function Dashboard() {
                 {t("calendar.views.month")}
               </button>
               <button
-                className={`px-4 py-2 rounded ${
+                className={`px-3 sm:px-4 py-2 rounded text-sm sm:text-base ${
                   calendarView === "week"
                     ? "bg-blue-600 text-white"
                     : "bg-white"
@@ -346,8 +343,10 @@ export default function Dashboard() {
                 {t("calendar.views.week")}
               </button>
               <button
-                className={`px-4 py-2 rounded ${
-                  calendarView === "day" ? "bg-blue-600 text-white" : "bg-white"
+                className={`px-3 sm:px-4 py-2 rounded text-sm sm:text-base ${
+                  calendarView === "day"
+                    ? "bg-blue-600 text-white"
+                    : "bg-white"
                 }`}
                 onClick={() => handleViewChange("day")}
               >
@@ -359,20 +358,24 @@ export default function Dashboard() {
         )}
 
         {activePanel === "employees" && user?.role === "admin" && (
-          <EmployeePanel
-            employees={employees}
-            onAddEmployee={handleAddEmployee}
-            onRemoveEmployee={handleRemoveEmployee}
-            onUpdateEmployee={handleUpdateEmployee}
-          />
+          <div className="overflow-x-auto">
+            <EmployeePanel
+              employees={employees}
+              onAddEmployee={handleAddEmployee}
+              onRemoveEmployee={handleRemoveEmployee}
+              onUpdateEmployee={handleUpdateEmployee}
+            />
+          </div>
         )}
 
         {activePanel === "history" && user?.role === "admin" && (
-          <HistoryPanel
-            history={scheduleHistory}
-            employees={employees}
-            onCopySchedule={handleCopySchedule}
-          />
+          <div className="overflow-x-auto">
+            <HistoryPanel
+              history={scheduleHistory}
+              employees={employees}
+              onCopySchedule={handleCopySchedule}
+            />
+          </div>
         )}
       </div>
       <SpecialEventDialog

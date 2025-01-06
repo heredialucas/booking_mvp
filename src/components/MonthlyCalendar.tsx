@@ -149,6 +149,17 @@ export default function MonthlyCalendar({
     showMore: (total: number) => `+${total} más`
   };
 
+  // Agregar nuevo manejador para eventos
+  const handleSelectEvent = (event: CalendarEvent, e: React.SyntheticEvent) => {
+    // Obtener las coordenadas del clic
+    const mouseEvent = e.nativeEvent as MouseEvent;
+    setContextMenu({
+      x: mouseEvent.clientX,
+      y: mouseEvent.clientY,
+      date: event.start
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="h-[700px] bg-white p-4 rounded-lg shadow">
@@ -171,6 +182,7 @@ export default function MonthlyCalendar({
           culture={t('locale')}
           messages={messages}
           date={selectedDate}
+          onSelectEvent={handleSelectEvent}
         />
       </div>
       <CalendarContextMenu
