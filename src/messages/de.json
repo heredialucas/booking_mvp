@@ -53,7 +53,13 @@
     "daily_hours": "Tagesstunden",
     "weekly_hours": "Wochenstunden",
     "monthly_hours": "Monatsstunden",
-    "select_color": "Farbe auswählen"
+    "select_color": "Farbe auswählen",
+    "weekly_hours_last_7_days": "Stunden letzte 7 Tage",
+    "monthly_hours_last_30_days": "Stunden letzte 30 Tage",
+    "delete": {
+      "title": "Mitarbeiter löschen",
+      "description": "Sind Sie sicher, dass Sie {name} löschen möchten? Alle Zeitpläne und zugehörigen Daten gehen verloren."
+    }
   },
   "schedule": {
     "lunch_break": "Mittagspause",
@@ -71,6 +77,7 @@
   },
   "common": {
     "cancel": "Abbrechen",
-    "create": "Erstellen"
+    "create": "Erstellen",
+    "delete": "Löschen"
   }
 } 

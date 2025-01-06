@@ -53,7 +53,13 @@
     "daily_hours": "Daily Hours",
     "weekly_hours": "Weekly Hours",
     "monthly_hours": "Monthly Hours",
-    "select_color": "Select color"
+    "select_color": "Select color",
+    "weekly_hours_last_7_days": "Hours last 7 days",
+    "monthly_hours_last_30_days": "Hours last 30 days",
+    "delete": {
+      "title": "Delete employee",
+      "description": "Are you sure you want to delete {name}? All their schedules and associated data will be lost."
+    }
   },
   "schedule": {
     "lunch_break": "Lunch break",
@@ -71,6 +77,7 @@
   },
   "common": {
     "cancel": "Cancel",
-    "create": "Create"
+    "create": "Create",
+    "delete": "Delete"
   }
 } 

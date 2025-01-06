@@ -53,7 +53,13 @@
     "daily_hours": "Horas Diarias",
     "weekly_hours": "Horas Semanales",
     "monthly_hours": "Horas Mensuales",
-    "select_color": "Seleccionar color"
+    "select_color": "Seleccionar color",
+    "weekly_hours_last_7_days": "Horas últimos 7 días",
+    "monthly_hours_last_30_days": "Horas últimos 30 días",
+    "delete": {
+      "title": "Eliminar empleado",
+      "description": "¿Estás seguro que deseas eliminar a {name}? Se perderán todos sus horarios y datos asociados."
+    }
   },
   "common": {
     "cancel": "Cancelar",
