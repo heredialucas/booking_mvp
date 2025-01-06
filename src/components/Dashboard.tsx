@@ -232,34 +232,102 @@ export default function Dashboard() {
         );
       case "week":
         return (
-          <WeeklySchedule
-            selectedDate={selectedDate}
-            employees={employees}
-            onUpdateEmployees={setEmployees}
-            onUpdateHistory={setScheduleHistory}
-            onNavigateToMonth={() => setCalendarView("month")}
-            isReadOnly={user?.role !== "admin"}
-            backToCalendarText={t("calendar.actions.back_to_calendar")}
-          />
-        );
-      case "day":
-        return (
           <div className="space-y-4">
-            <div className="flex justify-end items-center">
-              {user?.role === "admin" && (
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setIsEventDialogOpen(true)}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 mr-2"
+                  onClick={() => {
+                    const prevWeek = new Date(selectedDate);
+                    prevWeek.setDate(prevWeek.getDate() - 7);
+                    setSelectedDate(prevWeek);
+                  }}
+                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded"
                 >
-                  {t("calendar.actions.create_event")}
+                  ←
                 </button>
-              )}
+                <input
+                  type="date"
+                  value={selectedDate.toISOString().split('T')[0]}
+                  onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                  className="px-3 py-2 border rounded"
+                />
+                <button
+                  onClick={() => {
+                    const nextWeek = new Date(selectedDate);
+                    nextWeek.setDate(nextWeek.getDate() + 7);
+                    setSelectedDate(nextWeek);
+                  }}
+                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded"
+                >
+                  →
+                </button>
+              </div>
               <button
                 onClick={() => setCalendarView("month")}
                 className="px-4 py-2 bg-blue-500 text-white rounded"
               >
                 {t("calendar.actions.back_to_calendar")}
               </button>
+            </div>
+            <WeeklySchedule
+              selectedDate={selectedDate}
+              employees={employees}
+              onUpdateEmployees={setEmployees}
+              onUpdateHistory={setScheduleHistory}
+              onNavigateToMonth={() => setCalendarView("month")}
+              isReadOnly={user?.role !== "admin"}
+              backToCalendarText={t("calendar.actions.back_to_calendar")}
+            />
+          </div>
+        );
+      case "day":
+        return (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const prevDay = new Date(selectedDate);
+                    prevDay.setDate(prevDay.getDate() - 1);
+                    setSelectedDate(prevDay);
+                  }}
+                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded"
+                >
+                  ←
+                </button>
+                <input
+                  type="date"
+                  value={selectedDate.toISOString().split('T')[0]}
+                  onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                  className="px-3 py-2 border rounded"
+                />
+                <button
+                  onClick={() => {
+                    const nextDay = new Date(selectedDate);
+                    nextDay.setDate(nextDay.getDate() + 1);
+                    setSelectedDate(nextDay);
+                  }}
+                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded"
+                >
+                  →
+                </button>
+              </div>
+              <div className="flex gap-2">
+                {user?.role === "admin" && (
+                  <button
+                    onClick={() => setIsEventDialogOpen(true)}
+                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                  >
+                    {t("calendar.actions.create_event")}
+                  </button>
+                )}
+                <button
+                  onClick={() => setCalendarView("month")}
+                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                >
+                  {t("calendar.actions.back_to_calendar")}
+                </button>
+              </div>
             </div>
             <DaySchedule
               date={selectedDate}
