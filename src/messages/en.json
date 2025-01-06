@@ -66,14 +66,35 @@
     "emergency_break": "Emergency break",
     "break_instruction": "(First select lunch break, then you can mark emergency breaks for unexpected situations)",
     "daily_quota": "Daily quota",
-    "total_hours": "Total hours"
+    "total_hours": "Total hours",
+    "locale": "en-US"
   },
   "history": {
     "date_time": "Date and Time",
     "employee": "Employee",
     "previous_schedule": "Previous Schedule",
     "new_schedule": "New Schedule",
-    "copy": "Copy"
+    "copy": "Copy",
+    "title": "Schedule History",
+    "daily_view": "Daily View",
+    "weekly_view": "Weekly View",
+    "monthly_view": "Monthly View",
+    "copy_success": "Schedule copied successfully",
+    "copy_error": "Error copying schedule",
+    "copy_schedule": "Copy Schedule",
+    "select_view": "Select View",
+    "target_date": "Target Date",
+    "select_employees": "Select Employees",
+    "period": "Period",
+    "shifts": "shifts",
+    "schedules": "Schedules",
+    "copy_day_hint": "The schedule will be copied to the selected date",
+    "copy_week_hint": "Schedules will be copied starting from the selected date",
+    "copy_month_hint": "Schedules will be copied for the month starting from the selected date",
+    "daily_hours": "{hours}h in the day",
+    "weekly_hours": "{total}h total ({average}h/day)",
+    "monthly_hours": "{total}h total ({average}h/day in {days} days)",
+    "total_shifts": "{shifts} shifts"
   },
   "common": {
     "cancel": "Cancel",

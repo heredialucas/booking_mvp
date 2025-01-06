@@ -21,7 +21,7 @@ interface GroupedSchedule {
   startDate: Date;
   endDate: Date;
   employeeIndex: number;
-  schedules: DaySchedule[];
+  schedules: { [key: string]: DaySchedule };
 }
 
 interface HistoryPanelProps {
@@ -37,11 +37,18 @@ export default function HistoryPanel({
 }: HistoryPanelProps) {
   const t = useTranslations();
   const [storedEmployees, setStoredEmployees] = useLocalStorage('employees', employees);
+  const [storedHistory, setStoredHistory] = useLocalStorage<ScheduleHistory[]>('scheduleHistory', []);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [viewType, setViewType] = useState<ViewType>("day");
   const [selectedSchedules, setSelectedSchedules] =
     useState<GroupedSchedule | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (history.length > 0 && JSON.stringify(history) !== JSON.stringify(storedHistory)) {
+      setStoredHistory(history);
+    }
+  }, [history, storedHistory, setStoredHistory]);
 
   useEffect(() => {
     setStoredEmployees(employees);
@@ -50,46 +57,61 @@ export default function HistoryPanel({
   const groupedData = useMemo(() => {
     const grouped: { [key: string]: GroupedSchedule } = {};
 
-    history.forEach((entry) => {
+    storedHistory.forEach((entry) => {
       if (!entry.newSchedule) return;
 
-      const date = new Date(entry.timestamp);
-      let key: string;
-      let startDate = new Date(date);
-      let endDate = new Date(date);
+      try {
+        const employee = storedEmployees[entry.employeeIndex];
+        if (!employee) return;
 
-      switch (viewType) {
-        case "day":
-          key = `${entry.employeeIndex}-${date.toISOString().split("T")[0]}`;
-          break;
-        case "week":
+        const scheduleDate = Object.keys(entry.newSchedule)[0];
+        const scheduleData = entry.newSchedule[scheduleDate];
+
+        if (!scheduleDate || !scheduleData) return;
+
+        const [year, month, day] = scheduleDate.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+
+        let key = `${entry.employeeIndex}-${scheduleDate}`;
+        let startDate = date;
+        let endDate = date;
+
+        if (viewType === "week") {
           startDate = new Date(date);
           startDate.setDate(date.getDate() - date.getDay());
           endDate = new Date(startDate);
           endDate.setDate(startDate.getDate() + 6);
-          key = `${entry.employeeIndex}-${startDate.toISOString().split("T")[0]}`;
-          break;
-        case "month":
+          key = `${entry.employeeIndex}-${startDate.toISOString().split('T')[0]}`;
+        } else if (viewType === "month") {
           startDate = new Date(date.getFullYear(), date.getMonth(), 1);
           endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
           key = `${entry.employeeIndex}-${date.getFullYear()}-${date.getMonth()}`;
-          break;
-      }
+        }
 
-      if (!grouped[key]) {
-        grouped[key] = {
-          startDate,
-          endDate,
-          employeeIndex: entry.employeeIndex,
-          schedules: [],
-        };
-      }
+        if (!grouped[key]) {
+          grouped[key] = {
+            startDate,
+            endDate,
+            employeeIndex: entry.employeeIndex,
+            schedules: {},
+          };
+        }
 
-      grouped[key].schedules.push(entry.newSchedule);
+        const existingSchedule = grouped[key].schedules[scheduleDate];
+        if (!existingSchedule || scheduleData.hours > existingSchedule.hours) {
+          grouped[key].schedules = {
+            ...grouped[key].schedules,
+            [scheduleDate]: scheduleData
+          };
+        }
+
+      } catch (error) {
+        console.error('Error processing entry:', error);
+      }
     });
 
     return Object.values(grouped);
-  }, [history, viewType]);
+  }, [storedHistory, viewType, storedEmployees]);
 
   const columnHelper = createColumnHelper<GroupedSchedule>();
 
@@ -108,13 +130,44 @@ export default function HistoryPanel({
     }),
     columnHelper.accessor("schedules", {
       header: t("history.schedules"),
-      cell: (info) => `${info.getValue().length} ${t("history.shifts")}`,
+      cell: (info) => {
+        const schedules = info.getValue();
+        const totalHours = Object.values(schedules).reduce((total, schedule) => {
+          return total + schedule.hours;
+        }, 0);
+
+        switch (viewType) {
+          case "day":
+            return `${t("history.daily_hours", { hours: totalHours.toFixed(1) })}`;
+          
+          case "week":
+            const avgHoursPerDay = totalHours / 7;
+            return `${t("history.weekly_hours", { 
+              total: totalHours.toFixed(1), 
+              average: avgHoursPerDay.toFixed(1) 
+            })}`;
+          
+          case "month":
+            const daysInMonth = new Date(
+              info.row.original.endDate.getFullYear(),
+              info.row.original.endDate.getMonth() + 1,
+              0
+            ).getDate();
+            const avgHoursPerDayMonth = totalHours / daysInMonth;
+            return `${t("history.monthly_hours", { 
+              total: totalHours.toFixed(1), 
+              average: avgHoursPerDayMonth.toFixed(1),
+              days: daysInMonth
+            })}`;
+        }
+      },
     }),
     columnHelper.display({
       id: "actions",
       cell: (info) => (
         <button
           onClick={() => {
+            console.log('Selected for copy:', info.row.original);
             setSelectedSchedules(info.row.original);
             setIsDialogOpen(true);
           }}
@@ -194,17 +247,35 @@ export default function HistoryPanel({
           startDate={selectedSchedules.startDate}
           onCopy={(selectedEmployees, targetDate) => {
             const schedules = selectedSchedules.schedules;
+            console.log('Copying schedules:', {
+              schedules,
+              selectedEmployees,
+              targetDate,
+              viewType
+            });
             
             selectedEmployees.forEach(employeeId => {
               switch (viewType) {
                 case "day":
-                  if (schedules[0]) {
-                    onCopySchedule(schedules[0], [employeeId], [targetDate]);
+                  const scheduleDate = Object.keys(schedules)[0];
+                  const daySchedule = schedules[scheduleDate];
+                  if (daySchedule) {
+                    const normalizedDate = new Date(Date.UTC(
+                      targetDate.getFullYear(),
+                      targetDate.getMonth(),
+                      targetDate.getDate()
+                    ));
+                    console.log('Copying day schedule:', {
+                      schedule: daySchedule,
+                      employeeId,
+                      date: normalizedDate
+                    });
+                    onCopySchedule(daySchedule, [employeeId], [normalizedDate]);
                   }
                   break;
 
                 case "week":
-                  schedules.forEach((schedule, dayIndex) => {
+                  Object.values(schedules).forEach((schedule, dayIndex) => {
                     const date = new Date(targetDate);
                     date.setDate(date.getDate() + dayIndex);
                     onCopySchedule(schedule, [employeeId], [date]);
@@ -212,7 +283,7 @@ export default function HistoryPanel({
                   break;
 
                 case "month":
-                  schedules.forEach((schedule, dayIndex) => {
+                  Object.values(schedules).forEach((schedule, dayIndex) => {
                     const date = new Date(targetDate.getFullYear(), targetDate.getMonth(), dayIndex + 1);
                     onCopySchedule(schedule, [employeeId], [date]);
                   });

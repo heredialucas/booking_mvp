@@ -6,6 +6,7 @@ import { Employee, ScheduleHistory, type DaySchedule } from "@/types/types";
 import { getRandomColor } from "@/lib/utils";
 import BreakReasonDialog from "@/components/BreakReasonDialog";
 import { useTranslations } from "next-intl";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 interface DayScheduleProps {
   date: Date;
@@ -49,8 +50,26 @@ export default function DaySchedule({
     employeeIndex: number;
     cellIndex: number;
   } | null>(null);
+  const [, setStoredHistory] = useLocalStorage<ScheduleHistory[]>('scheduleHistory', []);
 
   const hours = Array.from({ length: 13 }, (_, i) => i + 8);
+
+  const updateHistoryAndStorage = (
+    employeeIndex: number,
+    previousSchedule: DaySchedule | undefined,
+    newSchedule: DaySchedule | undefined
+  ) => {
+    const dateKey = getDateKey(date);
+    const historyEntry: ScheduleHistory = {
+      timestamp: new Date(),
+      employeeIndex,
+      previousSchedule: previousSchedule ? { [dateKey]: previousSchedule } : undefined,
+      newSchedule: newSchedule ? { [dateKey]: newSchedule } : undefined,
+    };
+
+    setStoredHistory((prev) => [...prev, historyEntry]);
+    onUpdateHistory((prevHistory) => [...prevHistory, historyEntry]);
+  };
 
   const handleBreakDialogConfirm = (reason: string) => {
     if (pendingBreakAction && reason) {
@@ -108,15 +127,11 @@ export default function DaySchedule({
       const end = Math.max(lastClickedCell.cellIndex, cellIndex);
       updateEmployeeSchedule(employeeIndex, start, end);
       
-      onUpdateHistory((prevHistory) => [
-        ...prevHistory,
-        {
-          timestamp: new Date(),
-          employeeIndex,
-          previousSchedule,
-          newSchedule: newEmployees[employeeIndex].schedules?.[dateKey],
-        },
-      ]);
+      updateHistoryAndStorage(
+        employeeIndex,
+        previousSchedule,
+        newEmployees[employeeIndex].schedules?.[dateKey]
+      );
       
       setLastClickedCell(null);
       return;
@@ -177,15 +192,11 @@ export default function DaySchedule({
     setStartCell(cellIndex);
     setCurrentEmployee(employeeIndex);
 
-    onUpdateHistory((prevHistory) => [
-      ...prevHistory,
-      {
-        timestamp: new Date(),
-        employeeIndex,
-        previousSchedule,
-        newSchedule: newEmployees[employeeIndex].schedules?.[dateKey],
-      },
-    ]);
+    updateHistoryAndStorage(
+      employeeIndex,
+      previousSchedule,
+      newEmployees[employeeIndex].schedules?.[dateKey]
+    );
   };
 
   const handleMouseMove = (hourIndex: number, isHalfHour: boolean) => {
@@ -202,13 +213,15 @@ export default function DaySchedule({
     if (isDragging && currentEmployee !== null && startCell !== null) {
       const dateKey = getDateKey(date);
       const previousSchedule = employees[currentEmployee].schedules?.[dateKey];
+      const currentSchedule = employees[currentEmployee].schedules?.[dateKey];
+      
       onUpdateHistory((prevHistory) => [
         ...prevHistory,
         {
           timestamp: new Date(),
           employeeIndex: currentEmployee,
-          previousSchedule,
-          newSchedule: employees[currentEmployee].schedules?.[dateKey],
+          previousSchedule: previousSchedule ? { [dateKey]: previousSchedule } : undefined,
+          newSchedule: currentSchedule ? { [dateKey]: currentSchedule } : undefined,
         },
       ]);
     }
@@ -248,15 +261,11 @@ export default function DaySchedule({
 
     onUpdateEmployees(newEmployees);
 
-    onUpdateHistory((prevHistory) => [
-      ...prevHistory,
-      {
-        timestamp: new Date(),
-        employeeIndex,
-        previousSchedule: employee.schedules?.[dateKey],
-        newSchedule: newEmployees[employeeIndex].schedules?.[dateKey],
-      },
-    ]);
+    updateHistoryAndStorage(
+      employeeIndex,
+      employee.schedules?.[dateKey],
+      newEmployees[employeeIndex].schedules?.[dateKey]
+    );
   };
 
   const clearEmployeeSchedule = (employeeIndex: number) => {
@@ -273,15 +282,11 @@ export default function DaySchedule({
 
     onUpdateEmployees(newEmployees);
 
-    onUpdateHistory((prevHistory) => [
-      ...prevHistory,
-      {
-        timestamp: new Date(),
-        employeeIndex,
-        previousSchedule: employee.schedules?.[getDateKey(date)],
-        newSchedule: undefined,
-      },
-    ]);
+    updateHistoryAndStorage(
+      employeeIndex,
+      employee.schedules?.[getDateKey(date)],
+      undefined
+    );
   };
 
   const calculateTotalHours = () => {

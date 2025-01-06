@@ -11,7 +11,7 @@ import { useState, useMemo, useEffect } from "react";
 interface CopyScheduleDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  schedules: DaySchedule[];
+  schedules: { [key: string]: DaySchedule };
   employees: Employee[];
   viewType: "day" | "week" | "month";
   startDate: Date;
@@ -31,6 +31,7 @@ const normalizeDate = (date: Date): Date => {
 export function CopyScheduleDialog({
   isOpen,
   onClose,
+  schedules,
   employees,
   viewType,
   startDate,
@@ -68,6 +69,11 @@ export function CopyScheduleDialog({
       alert(t("history.select_employees"));
       return;
     }
+    console.log('Dialog copy:', {
+      selectedEmployees,
+      targetDate,
+      schedules
+    });
     onCopy(selectedEmployees, targetDate);
     onClose();
   };

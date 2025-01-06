@@ -19,8 +19,8 @@ export interface Employee {
 export interface ScheduleHistory {
   timestamp: Date;
   employeeIndex: number;
-  previousSchedule: DaySchedule | undefined;
-  newSchedule: DaySchedule | undefined;
+  previousSchedule: { [key: string]: DaySchedule } | undefined;
+  newSchedule: { [key: string]: DaySchedule } | undefined;
 }
 
 export interface DaySchedule {

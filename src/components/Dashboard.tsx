@@ -125,20 +125,31 @@ export default function Dashboard() {
     setEmployees(newEmployees);
   };
 
-  const handleCopySchedule = (schedule: DayScheduleType | undefined) => {
-    if (!schedule) return;
-    const dateKey = selectedDate.toISOString().split("T")[0];
+  const handleCopySchedule = (
+    schedule: DayScheduleType,
+    employeeIds: number[],
+    dates: Date[]
+  ) => {
+    const newEmployees = [...employees];
+    
+    employeeIds.forEach(employeeIndex => {
+      dates.forEach(date => {
+        const dateKey = date.toISOString().split("T")[0];
+        if (newEmployees[employeeIndex]) {
+          newEmployees[employeeIndex] = {
+            ...newEmployees[employeeIndex],
+            schedules: {
+              ...(newEmployees[employeeIndex].schedules || {}),
+              [dateKey]: {
+                ...schedule,
+                color: newEmployees[employeeIndex].defaultColor || schedule.color,
+              },
+            },
+          };
+        }
+      });
+    });
 
-    const newEmployees = employees.map((emp) => ({
-      ...emp,
-      schedules: {
-        ...(emp.schedules || {}),
-        [dateKey]: {
-          ...schedule,
-          color: emp.schedules?.[dateKey]?.color || schedule.color,
-        },
-      },
-    }));
     setEmployees(newEmployees);
   };
 

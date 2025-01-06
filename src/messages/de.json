@@ -66,14 +66,35 @@
     "emergency_break": "Notfallpause",
     "break_instruction": "(Wählen Sie zuerst die Mittagspause aus, dann können Sie Notfallpausen für unerwartete Situationen markieren)",
     "daily_quota": "Tagesquote",
-    "total_hours": "Gesamtstunden"
+    "total_hours": "Gesamtstunden",
+    "locale": "de-DE"
   },
   "history": {
     "date_time": "Datum und Uhrzeit",
     "employee": "Mitarbeiter",
     "previous_schedule": "Vorheriger Zeitplan",
     "new_schedule": "Neuer Zeitplan",
-    "copy": "Kopieren"
+    "copy": "Kopieren",
+    "title": "Zeitplan-Verlauf",
+    "daily_view": "Tagesansicht",
+    "weekly_view": "Wochenansicht",
+    "monthly_view": "Monatsansicht",
+    "copy_success": "Zeitplan erfolgreich kopiert",
+    "copy_error": "Fehler beim Kopieren des Zeitplans",
+    "copy_schedule": "Zeitplan kopieren",
+    "select_view": "Ansicht auswählen",
+    "target_date": "Zieldatum",
+    "select_employees": "Mitarbeiter auswählen",
+    "period": "Zeitraum",
+    "shifts": "Schichten",
+    "schedules": "Zeitpläne",
+    "copy_day_hint": "Der Zeitplan wird zum ausgewählten Datum kopiert",
+    "copy_week_hint": "Zeitpläne werden ab dem ausgewählten Datum kopiert",
+    "copy_month_hint": "Zeitpläne werden für den Monat ab dem ausgewählten Datum kopiert",
+    "daily_hours": "{hours}h am Tag",
+    "weekly_hours": "{total}h gesamt ({average}h/Tag)",
+    "monthly_hours": "{total}h gesamt ({average}h/Tag in {days} Tagen)",
+    "total_shifts": "{shifts} Schichten"
   },
   "common": {
     "cancel": "Abbrechen",

@@ -97,6 +97,10 @@
     "schedules": "Horarios",
     "copy_day_hint": "Se copiará el horario para la fecha seleccionada",
     "copy_week_hint": "Se copiarán los horarios para la semana que comienza en la fecha seleccionada",
-    "copy_month_hint": "Se copiarán los horarios para el mes que comienza en la fecha seleccionada"
+    "copy_month_hint": "Se copiarán los horarios para el mes que comienza en la fecha seleccionada",
+    "daily_hours": "{hours}h en el día",
+    "weekly_hours": "{total}h totales ({average}h/día)",
+    "monthly_hours": "{total}h totales ({average}h/día en {days} días)",
+    "total_shifts": "{shifts} turnos"
   }
 } 
