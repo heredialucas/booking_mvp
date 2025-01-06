@@ -79,7 +79,7 @@ export default function Dashboard() {
 
   // Convertir horarios a eventos
   useEffect(() => {
-    if (employees.length === 0) return; // No procesar si no hay empleados
+    if (employees.length === 0) return;
 
     const scheduleEvents = employees.flatMap((employee) => {
       if (!employee.schedules) return [];
@@ -94,7 +94,7 @@ export default function Dashboard() {
 
     const specialEvents = events.filter((event) => event.type === "special");
     setEvents([...specialEvents, ...scheduleEvents]);
-  }, [employees]);
+  }, [employees, events]);
 
   const handleUpdateEmployees = (newEmployees: Employee[]) => {
     setEmployees(newEmployees);

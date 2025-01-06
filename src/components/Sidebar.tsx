@@ -8,7 +8,7 @@ interface SidebarProps {
   scheduleHistory: ScheduleHistory[];
   selectedDate: Date;
   onUpdateEmployee: (index: number, employee: Employee) => void;
-  onCopySchedule: (schedule: DaySchedule) => void;
+  onCopySchedule: (schedule: DaySchedule, employeeIds: number[], dates: Date[]) => void;
   onAddEmployee: () => void;
   onRemoveEmployee: (index: number) => void;
 }
@@ -103,7 +103,15 @@ export default function Sidebar({
               <strong>Fecha:</strong> {entry.timestamp.toLocaleString()}
             </div>
             <button
-              onClick={() => entry.newSchedule && onCopySchedule(entry.newSchedule)}
+              onClick={() => {
+                if (entry.newSchedule) {
+                  const scheduleDate = Object.keys(entry.newSchedule)[0];
+                  const schedule = entry.newSchedule[scheduleDate];
+                  if (schedule) {
+                    onCopySchedule(schedule, [entry.employeeIndex], [new Date()]);
+                  }
+                }
+              }}
               className="mt-2 w-full p-1 bg-green-500 text-white rounded"
               disabled={!entry.newSchedule}
             >
