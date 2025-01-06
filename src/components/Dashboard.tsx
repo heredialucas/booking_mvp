@@ -274,9 +274,7 @@ export default function Dashboard() {
               employees={employees}
               onUpdateEmployees={setEmployees}
               onUpdateHistory={setScheduleHistory}
-              onNavigateToMonth={() => setCalendarView("month")}
               isReadOnly={user?.role !== "admin"}
-              backToCalendarText={t("calendar.actions.back_to_calendar")}
             />
           </div>
         );

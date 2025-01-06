@@ -1,0 +1,28 @@
+/* Estilos para las celdas del calendario */
+.rbc-calendar .rbc-month-view .rbc-month-row {
+  overflow: visible !important;
+}
+
+.rbc-calendar .rbc-month-view .rbc-date-cell {
+  transition: background-color 0.2s ease;
+}
+
+.rbc-calendar .rbc-month-view .rbc-date-cell:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+/* Estilos para los eventos */
+.rbc-event {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rbc-event:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1;
+}
+
+/* Mejorar la visibilidad del día actual */
+.rbc-today {
+  background-color: rgba(66, 153, 225, 0.08) !important;
+} 

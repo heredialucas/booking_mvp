@@ -11,9 +11,7 @@ interface WeeklyScheduleProps {
   employees: Employee[];
   onUpdateEmployees: (employees: Employee[]) => void;
   onUpdateHistory: (updater: (prev: ScheduleHistory[]) => ScheduleHistory[]) => void;
-  onNavigateToMonth: () => void;
   isReadOnly?: boolean;
-  backToCalendarText?: string;
 }
 
 export default function WeeklySchedule({
@@ -21,7 +19,6 @@ export default function WeeklySchedule({
   employees,
   onUpdateEmployees,
   onUpdateHistory,
-  onNavigateToMonth,
   isReadOnly = false,
 }: WeeklyScheduleProps) {
   const t = useTranslations();
@@ -44,12 +41,6 @@ export default function WeeklySchedule({
             date: format(weekStart, "dd/MM/yyyy", { locale: es })
           })}
         </h2>
-        <button
-          onClick={onNavigateToMonth}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          {t('calendar.actions.back_to_calendar')}
-        </button>
       </div>
       
       <div className="space-y-4">

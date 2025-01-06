@@ -5,6 +5,7 @@ import { Calendar, dateFnsLocalizer, Views } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import "@/styles/calendar.css";
 import { Employee, CalendarEvent, DaySchedule } from "@/types/types";
 import CalendarContextMenu from "./CalendarContextMenu";
 import { useTranslations } from 'next-intl';
@@ -64,6 +65,17 @@ const formatScheduleToEvent = (
     end: endDate,
     color: schedule.color,
     type: "schedule",
+  };
+};
+
+// Agregar estos estilos personalizados después de importar el CSS de react-big-calendar
+const customDayPropGetter = () => {
+  return {
+    className: 'cursor-pointer hover:bg-gray-50 transition-colors duration-200',
+    style: {
+      margin: 0,
+      padding: '0.5rem',
+    },
   };
 };
 
@@ -174,9 +186,11 @@ export default function MonthlyCalendar({
           onNavigate={handleNavigate}
           selectable={true}
           popup
+          dayPropGetter={customDayPropGetter}
           eventPropGetter={(event) => ({
             style: {
               backgroundColor: event.color || "#3174ad",
+              cursor: 'pointer',
             },
           })}
           culture={t('locale')}
