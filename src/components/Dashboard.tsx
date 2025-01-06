@@ -94,7 +94,7 @@ export default function Dashboard() {
 
     const specialEvents = events.filter((event) => event.type === "special");
     setEvents([...specialEvents, ...scheduleEvents]);
-  }, [employees, events]);
+  }, [employees]);
 
   const handleUpdateEmployees = (newEmployees: Employee[]) => {
     setEmployees(newEmployees);
@@ -168,7 +168,11 @@ export default function Dashboard() {
       id: `special-${Date.now()}`,
       type: "special",
     };
-    setEvents((prev) => [...prev, newEvent]);
+    
+    setEvents((prev) => {
+      const filteredEvents = prev.filter(event => event.type !== "special");
+      return [...filteredEvents, newEvent];
+    });
   };
 
   const handleSelectSlot = (start: Date) => {
